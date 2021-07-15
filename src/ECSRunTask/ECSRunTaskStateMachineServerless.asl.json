@@ -1,0 +1,189 @@
+{
+    "Comment": "This is your state machine",
+    "StartAt": "Is RunTask call on Batch?",
+    "States": {
+        "Is RunTask call on Batch?": {
+            "Type": "Choice",
+            "Choices": [{
+                "Variable": "$.detail.requestParameters.cluster",
+                "StringMatches": "*_Batch_*",
+                "Next": "Select common fields"
+            }],
+            "Default": "Skipping, RunTask call not on Batch"
+        },
+        "Skipping, RunTask call not on Batch": {
+            "Type": "Pass",
+            "End": true
+        },
+        "Select common fields": {
+            "Type": "Pass",
+            "Next": "SQS SendMessage RunTask Call",
+            "Parameters": {
+                "Region.$": "$.detail.awsRegion",
+                "LastEventTime.$": "$.detail.eventTime",
+                "JobId.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[0].value",
+                "CEName.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[2].value",
+                "JQName.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[1].value",
+                "JobAttempt.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[3].value",
+                "ECSCluster.$": "$.detail.requestParameters.cluster"
+            }
+        },
+        "SQS SendMessage RunTask Call": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::sqs:sendMessage",
+            "ResultPath": null,
+            "Parameters": {
+                "QueueUrl": "${SQSMetricsQueue}",
+                "MessageBody": {
+                    "Dimensions": {
+                        "JobQueue.$": "$.JQName",
+                        "ECSCluster.$": "$.ECSCluster",
+                        "ComputeEnvironment.$": "$.CEName"
+                    },
+                    "Properties": {
+                        "JobId.$": "$.JobId",
+                        "ECSCluster.$": "$.ECSCluster",
+                        "JobQueue.$": "$.JQName",
+                        "ComputeEnvironment.$": "$.CEName"
+                    },
+                    "MetricName": "RunTask Call",
+                    "MetricTime.$": "$.LastEventTime"
+                }
+            },
+            "Retry": [{
+                "ErrorEquals": ["States.ALL"],
+                "IntervalSeconds": 1,
+                "BackoffRate": 2.0,
+                "MaxAttempts": 10
+            }],
+            "Next": "Is Array Job?"
+        },
+        "Is Array Job?": {
+            "Type": "Choice",
+            "Choices": [{
+                "And": [{
+                    "Variable": "$$.Execution.Input.detail.requestParameters.overrides.containerOverrides[0].environment[4]",
+                    "IsPresent": true
+                }, {
+                    "Variable": "$$.Execution.Input.detail.requestParameters.overrides.containerOverrides[0].environment[4].name",
+                    "StringEquals": "AWS_BATCH_JOB_ARRAY_INDEX"
+                }],
+                "Next": "Yes, add job index"
+            }],
+            "Default": "Is task placed onto an instance?"
+        },
+        "Yes, add job index": {
+            "Type": "Pass",
+            "InputPath": "$$.Execution.Input.detail.requestParameters.overrides.containerOverrides[0].environment[4].value",
+            "ResultPath": "$.JobArrayIndex",
+            "Next": "Is task placed onto an instance?"
+        },
+        "Is task placed onto an instance?": {
+            "Type": "Choice",
+            "Choices": [{
+                "And": [{
+                    "Variable": "$$.Execution.Input.detail.responseElements",
+                    "IsPresent": true
+                }, {
+                    "Variable": "$$.Execution.Input.detail.responseElements.tasks[0]",
+                    "IsPresent": true
+                }, {
+                    "Not": {
+                        "Variable": "$$.Execution.Input.detail.responseElements.failures[0]",
+                        "IsPresent": true
+                    }
+                }],
+                "Next": "Job is placed AvailabilityZone"
+            }],
+            "Default": "Job Not Placed, Skipping"
+        },
+        "Job is placed AvailabilityZone": {
+            "Type": "Pass",
+            "InputPath": "$$.Execution.Input.detail.responseElements.tasks[0].availabilityZone",
+            "ResultPath": "$.AvailabilityZone",
+            "Next": "Job is placed ContainerInstanceId"
+        },
+        "Job is placed ContainerInstanceId": {
+            "Type": "Pass",
+            "InputPath": "$$.Execution.Input.detail.responseElements.tasks[0].containerInstanceArn",
+            "ResultPath": "$.ContainerInstanceId",
+            "Next": "DynamoDB GetItem Instance"
+        },
+        "DynamoDB GetItem Instance": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::dynamodb:getItem",
+            "Parameters": {
+                "TableName": "${ECSRegistrationTable}",
+                "Key": {
+                    "ContainerInstanceId": {
+                        "S.$": "$.ContainerInstanceId"
+                    }
+                },
+                "ProjectionExpression": "InstanceType,InstanceId",
+                "ConsistentRead": true
+            },
+            "Retry": [{
+                "ErrorEquals": ["States.ALL"],
+                "IntervalSeconds": 1,
+                "BackoffRate": 2.0,
+                "MaxAttempts": 5
+            }],
+            "ResultPath": "$.InstanceProperties",
+            "Next": "Did we get the instance?"
+        },
+        "Did we get the instance?": {
+            "Type": "Choice",
+            "Choices": [{
+                "Not": {
+                    "Variable": "$.InstanceProperties.Item",
+                    "IsPresent": true
+                },
+                "Next": "Retry Get Item with Delay"
+            }],
+            "Default": "SQS SendMessage Placed"
+        },
+        "Retry Get Item with Delay": {
+            "Type": "Wait",
+            "Seconds": 3,
+            "Next": "DynamoDB GetItem Instance"
+        },
+        "SQS SendMessage Placed": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::sqs:sendMessage",
+            "Parameters": {
+                "QueueUrl": "${SQSMetricsQueue}",
+                "MessageBody": {
+                    "Dimensions": {
+                        "JobQueue.$": "$.JQName",
+                        "ECSCluster.$": "$.ECSCluster",
+                        "ComputeEnvironment.$": "$.CEName",
+                        "AvailabilityZone.$": "$.AvailabilityZone",
+                        "InstanceType.$": "$.InstanceProperties.Item.InstanceType.S"
+                    },
+                    "Properties": {
+                        "JobId.$": "$.JobId",
+                        "InstanceId.$": "$.InstanceProperties.Item.InstanceId.S",
+                        "ECSCluster.$": "$.ECSCluster",
+                        "JobQueue.$": "$.JQName",
+                        "ComputeEnvironment.$": "$.CEName",
+                        "AvailabilityZone.$": "$.AvailabilityZone",
+                        "InstanceType.$": "$.InstanceProperties.Item.InstanceType.S"
+                    },
+                    "MetricName": "Jobs Placed",
+                    "MetricTime.$": "$.LastEventTime"
+                }
+            },
+            "Retry": [{
+                "ErrorEquals": ["States.ALL"],
+                "IntervalSeconds": 1,
+                "BackoffRate": 2.0,
+                "MaxAttempts": 10
+            }],
+            "End": true
+        },
+        "Job Not Placed, Skipping": {
+            "Type": "Pass",
+            "End": true
+        }
+    }
+}

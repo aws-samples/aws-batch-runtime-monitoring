@@ -1,0 +1,156 @@
+{
+    "Comment": "This is your state machine",
+    "StartAt": "Check Event for Error",
+    "States": {
+        "Check Event for Error": {
+            "Type": "Choice",
+            "Choices": [{
+                "Not": {
+                    "Variable": "$.detail.errorCode",
+                    "IsPresent": true
+                },
+                "Next": "DynamoDB PutItem"
+            }],
+            "Default": "Success"
+        },
+        "DynamoDB PutItem": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::dynamodb:putItem",
+            "InputPath": "$$.Execution.Input",
+            "Parameters": {
+                "TableName": "${ECSRegistrationTable}",
+                "ConditionExpression": "attribute_not_exists(ContainerInstanceId)",
+                "Item": {
+                    "ContainerInstanceId": {
+                        "S.$": "$.detail.responseElements.containerInstance.containerInstanceArn"
+                    },
+                    "InstanceId": {
+                        "S.$": "$.detail.responseElements.containerInstance.ec2InstanceId"
+                    },
+                    "LastEventTime": {
+                        "S.$": "$.detail.eventTime"
+                    },
+                    "LastEventType": {
+                        "S.$": "$.detail.eventName"
+                    },
+                    "ECSCluster": {
+                        "S.$": "$.detail.requestParameters.cluster"
+                    },
+                    "AvailabilityZone": {
+                        "S.$": "$.detail.responseElements.containerInstance.attributes[15].value"
+                    },
+                    "InstanceType": {
+                        "S.$": "$.detail.responseElements.containerInstance.attributes[53].value"
+                    },
+                    "AmiId": {
+                        "S.$": "$.detail.responseElements.containerInstance.attributes[2].value"
+                    },
+                    "CPU": {
+                        "N.$": "States.Format('{}',$.detail.responseElements.containerInstance.registeredResources[0].integerValue)"
+                    },
+                    "Memory": {
+                        "N.$": "States.Format('{}',$.detail.responseElements.containerInstance.registeredResources[1].integerValue)"
+                    },
+                    "Events": {
+                        "L": [{
+                            "M": {
+                                "EventType": {
+                                    "S.$": "$.detail.eventName"
+                                },
+                                "EventTime": {
+                                    "S.$": "$.detail.eventTime"
+                                }
+                            }
+                        }]
+                    }
+                }
+            },
+            "Next": "SQS SendMessage",
+            "Catch": [{
+                "ErrorEquals": ["DynamoDB.ConditionalCheckFailedException"],
+                "Next": "DynamoDB UpdateItem",
+                "Comment": "Item exist in the database, appending"
+            }],
+            "Retry": [ {
+                "ErrorEquals": [ "States.ALL"  ],
+                "IntervalSeconds": 1,
+                "BackoffRate": 2.0,
+                "MaxAttempts": 10
+                } ],
+        },
+        "DynamoDB UpdateItem": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::dynamodb:updateItem",
+            "InputPath": "$$.Execution.Input",
+            "Parameters": {
+                "TableName": "${ECSRegistrationTable}",
+                "Key": {
+                    "ContainerInstanceId": {
+                        "S.$": "$.detail.responseElements.containerInstance.containerInstanceArn"
+                    }
+                },
+                "UpdateExpression": "SET LastEventTime = :LastEventTime, LastEventType = :LastEventType, Events = list_append(Events, :NewEvent)",
+                "ExpressionAttributeValues": {
+                    ":NewEvent": {
+                        "L": [{
+                            "M": {
+                                "EventType": {
+                                    "S.$": "$.detail.eventName"
+                                },
+                                "EventTime": {
+                                    "S.$": "$.detail.eventTime"
+                                }
+                            }
+                        }]
+                    },
+                    ":LastEventTime": {
+                        "S.$": "$.detail.eventTime"
+                    },
+                    ":LastEventType": {
+                        "S.$": "$.detail.eventName"
+                    }
+                }
+            },
+            "Retry": [ {
+                "ErrorEquals": [ "States.ALL"  ],
+                "IntervalSeconds": 1,
+                "BackoffRate": 2.0,
+                "MaxAttempts": 10
+                } ],
+            "Next": "SQS SendMessage"
+        },
+        "SQS SendMessage": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::sqs:sendMessage",
+            "InputPath": "$$.Execution.Input",
+            "Parameters": {
+                "QueueUrl": "${SQSMetricsQueue}",
+                "MessageBody": {
+                    "Dimensions": {
+                        "AvailabilityZone.$": "$.detail.responseElements.containerInstance.attributes[15].value",
+                        "ECSCluster.$": "$.detail.requestParameters.cluster",
+                        "InstanceType.$": "$.detail.responseElements.containerInstance.attributes[53].value"
+                    },
+                    "Properties": {
+                        "InstanceId.$": "$.detail.responseElements.containerInstance.ec2InstanceId",
+                        "ECSCluster.$": "$.detail.requestParameters.cluster",
+                        "InstanceType.$": "$.detail.responseElements.containerInstance.attributes[53].value",
+                        "AvailabilityZone.$": "$.detail.responseElements.containerInstance.attributes[15].value"
+                    },
+                    "LastEventType.$": "$.detail.eventName",
+                    "MetricTime.$": "$.detail.eventTime"
+                }
+            },
+            "Retry": [ {
+                "ErrorEquals": [ "States.ALL"  ],
+                "IntervalSeconds": 1,
+                "BackoffRate": 2.0,
+                "MaxAttempts": 10
+                } ],
+            "Next": "Success"
+        },
+        "Success": {
+            "Type": "Succeed"
+        }
+    }
+}
