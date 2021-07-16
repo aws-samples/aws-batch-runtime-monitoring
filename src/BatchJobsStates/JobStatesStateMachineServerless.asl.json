@@ -73,7 +73,6 @@
       "Type": "Choice",
       "Choices": [
         {
-
           "Variable": "$$.Execution.Input.detail.container.containerInstanceArn",
           "IsPresent": true,
           "Next": "Get ContainerInstanceId from containerInstanceArn"

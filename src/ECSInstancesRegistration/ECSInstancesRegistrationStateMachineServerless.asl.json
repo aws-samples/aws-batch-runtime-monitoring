@@ -70,13 +70,7 @@
                 "ErrorEquals": ["DynamoDB.ConditionalCheckFailedException"],
                 "Next": "DynamoDB UpdateItem",
                 "Comment": "Item exist in the database, appending"
-            }],
-            "Retry": [ {
-                "ErrorEquals": [ "States.ALL"  ],
-                "IntervalSeconds": 1,
-                "BackoffRate": 2.0,
-                "MaxAttempts": 10
-                } ],
+            }]
         },
         "DynamoDB UpdateItem": {
             "Type": "Task",
