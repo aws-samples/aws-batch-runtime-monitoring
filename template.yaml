@@ -885,13 +885,13 @@ Resources:
                         "type": "metric",
                         "properties": {
                             "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"SUBMITTED\"', 'Sum', 60)", "id": "e1", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"PENDING\"', 'Sum', 60)", "id": "e2", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"RUNNABLE\"', 'Sum', 60)", "id": "e3", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"STARTING\"', 'Sum', 60)", "id": "e4", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"RUNNING\"', 'Sum', 60)", "id": "e5", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"SUCCEEDED\"', 'Sum', 60)", "id": "e6", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"FAILED\"', 'Sum', 60)", "id": "e7", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ]
+                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"SUBMITTED\"', 'Sum', 60)", "id": "e1", "label": "\u0024{PROP(\u0027Dim.JobDefinition\u0027)} \u0024{PROP(\u0027MetricName\u0027)}" } ],
+                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"PENDING\"', 'Sum', 60)", "id": "e2", "label": "\u0024{PROP(\u0027Dim.JobDefinition\u0027)} \u0024{PROP(\u0027MetricName\u0027)}" } ],
+                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"RUNNABLE\"', 'Sum', 60)", "id": "e3", "label": "\u0024{PROP(\u0027Dim.JobDefinition\u0027)} \u0024{PROP(\u0027MetricName\u0027)}" } ],
+                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"STARTING\"', 'Sum', 60)", "id": "e4", "label": "\u0024{PROP(\u0027Dim.JobDefinition\u0027)} \u0024{PROP(\u0027MetricName\u0027)}" } ],
+                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"RUNNING\"', 'Sum', 60)", "id": "e5", "label": "\u0024{PROP(\u0027Dim.JobDefinition\u0027)} \u0024{PROP(\u0027MetricName\u0027)}" } ],
+                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"SUCCEEDED\"', 'Sum', 60)", "id": "e6", "label": "\u0024{PROP(\u0027Dim.JobDefinition\u0027)} \u0024{PROP(\u0027MetricName\u0027)}" } ],
+                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"FAILED\"', 'Sum', 60)", "id": "e7", "label": "\u0024{PROP(\u0027Dim.JobDefinition\u0027)} \u0024{PROP(\u0027MetricName\u0027)}" } ]
                             ],
                             "period": 60,
                             "stat": "Sum",

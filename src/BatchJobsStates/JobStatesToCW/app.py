@@ -59,21 +59,12 @@ def lambda_handler(event, context):
     for record in event["Records"]:
         rec = json.loads(record["body"])
 
-        if 'ECSCluster' in rec['Properties']:
-            ecs_cluster = rec['Properties']['ECSCluster'].split('/')[-1].split('_Batch')[0]
-            rec['Properties']['ECSCluster'] = ecs_cluster
-
-        if 'ECSCluster' in rec['Dimensions']:
-            ecs_cluster = rec['Dimensions']['ECSCluster'].split('/')[-1].split('_Batch')[0]
-            rec['Dimensions']['ECSCluster'] = ecs_cluster
-
-        if 'JobQueue' in rec['Properties']:
-            job_queue = rec['Properties']['JobQueue'].split('/')[-1]
-            rec['Properties']['JobQueue'] = job_queue
-
-        if 'JobQueue' in rec['Dimensions']:
-            job_queue = rec['Dimensions']['JobQueue'].split('/')[-1]
-            rec['Dimensions']['JobQueue'] = job_queue
+        if 'ECSCluster'     in rec['Dimensions']: rec['Dimensions']['ECSCluster']       = rec['Dimensions']['ECSCluster'].split('/')[-1].split('_Batch')[0]
+        if 'JobQueue'       in rec['Dimensions']: rec['Dimensions']['JobQueue']         = rec['Dimensions']['JobQueue'].split('/')[-1]
+        if 'JobDefinition'  in rec['Properties']: rec['Dimensions']['JobDefinition']    = rec['Properties']['JobDefinition'].split('/')[1]
+        
+        if 'ECSCluster'     in rec['Properties']: rec['Properties']['ECSCluster']       = rec['Properties']['ECSCluster'].split('/')[-1].split('_Batch')[0]
+        if 'JobQueue'       in rec['Properties']: rec['Properties']['JobQueue']         = rec['Properties']['JobQueue'].split('/')[-1]
 
         embedded_metrics_placed_jobs(
             rec["Dimensions"],

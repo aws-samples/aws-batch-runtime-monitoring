@@ -10,6 +10,8 @@
         "Region.$": "$.region",
         "JobQueue.$": "$.detail.jobQueue",
         "JobName.$": "$.detail.jobName",
+        "Parameters.$": "$.detail.parameters",
+        "JobDefinition.$": "$.detail.jobDefinition",
         "LastEventType.$": "$.detail.status",
         "LastEventTime.$": "$.time"
       }
@@ -153,7 +155,9 @@
             "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
             "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
             "InstanceId.$": "$.ECSInstance.Item.InstanceId.S",
-            "JobName.$": "$.JobName"
+            "JobName.$": "$.JobName",
+            "JobDefinition.$": "$.JobDefinition",
+            "Parameters.$": "$.Parameters"
           },
           "MetricName.$": "$.LastEventType",
           "MetricTime.$": "$.LastEventTime"
@@ -181,7 +185,8 @@
             "JobId.$": "$.JobId",
             "JobQueue.$": "$.JobQueue",
             "JobState.$": "$.LastEventType",
-            "JobName.$": "$.JobName"
+            "JobName.$": "$.JobName",
+            "JobDefinition.$": "$.JobDefinition"
           },
           "MetricName.$": "$.LastEventType",
           "MetricTime.$": "$.LastEventTime"
