@@ -76,10 +76,18 @@
           "Variable": "$$.Execution.Input.detail.container.containerInstanceArn",
           "IsPresent": true,
           "Next": "Get ContainerInstanceId from containerInstanceArn"
-        },{
-          "Variable": "$$.Execution.Input.detail.attempts[0].container.containerInstanceArn",
+        }
+      ],
+      "Default": "Get Job State for Instance Association Array"
+    },
+    "Get Job State for Instance Association Array": {
+      "Type": "Choice",
+      "InputPath": "$$.Execution.Input.detail.attempts[-1]",
+      "Choices": [
+        {
+          "Variable": "$.container.containerInstanceArn",
           "IsPresent": true,
-          "Next": "Get ContainerInstanceId from attempts[0].container.containerInstanceArn"
+          "Next": "Get ContainerInstanceId from attempts[-1].container.containerInstanceArn"
         }
       ],
       "Default": "Skip Event"
@@ -90,10 +98,10 @@
       "InputPath": "$$.Execution.Input.detail.container.containerInstanceArn",
       "ResultPath": "$.containerInstanceArn"
     },
-    "Get ContainerInstanceId from attempts[0].container.containerInstanceArn": {
+    "Get ContainerInstanceId from attempts[-1].container.containerInstanceArn": {
       "Type": "Pass",
       "Next": "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId",
-      "InputPath": "$$.Execution.Input.detail.attempts[0].container.containerInstanceArn",
+      "InputPath": "$$.Execution.Input.detail.attempts[-1].container.containerInstanceArn",
       "ResultPath": "$.containerInstanceArn"
     },
     "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId": {

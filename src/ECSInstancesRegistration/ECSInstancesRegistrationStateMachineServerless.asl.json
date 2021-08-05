@@ -9,14 +9,26 @@
                     "Variable": "$.detail.errorCode",
                     "IsPresent": true
                 },
-                "Next": "DynamoDB PutItem"
+                "Next": "Get Fields DDB"
             }],
             "Default": "Success"
+        },
+        "Get Fields DDB": {
+            "Type": "Pass",
+            "Next": "DynamoDB PutItem",
+            "Comment": "Filter the elements using json path",
+            "Parameters": {
+                "detail.$": "$.detail",
+                "AvailabilityZone.$": "$.detail.responseElements.containerInstance.attributes[?(@.name==ecs.availability-zone)].value",
+                "InstanceType.$": "$.detail.responseElements.containerInstance.attributes[?(@.name==ecs.instance-type)].value",
+                "AmiId.$": "$.detail.responseElements.containerInstance.attributes[?(@.name==ecs.ami-id)].value",
+                "CPU.$": "$.detail.responseElements.containerInstance.registeredResources[?(@.name==CPU)].integerValue",
+                "Memory.$": "$.detail.responseElements.containerInstance.registeredResources[?(@.name==MEMORY)].integerValue"
+            }
         },
         "DynamoDB PutItem": {
             "Type": "Task",
             "Resource": "arn:aws:states:::dynamodb:putItem",
-            "InputPath": "$$.Execution.Input",
             "Parameters": {
                 "TableName": "${ECSRegistrationTable}",
                 "ConditionExpression": "attribute_not_exists(ContainerInstanceId)",
@@ -37,19 +49,19 @@
                         "S.$": "$.detail.requestParameters.cluster"
                     },
                     "AvailabilityZone": {
-                        "S.$": "$.detail.responseElements.containerInstance.attributes[15].value"
+                        "S.$": "$.AvailabilityZone[0]"
                     },
                     "InstanceType": {
-                        "S.$": "$.detail.responseElements.containerInstance.attributes[53].value"
+                        "S.$": "$.InstanceType[0]"
                     },
                     "AmiId": {
-                        "S.$": "$.detail.responseElements.containerInstance.attributes[2].value"
+                        "S.$": "$.AmiId[0]"
                     },
                     "CPU": {
-                        "N.$": "States.Format('{}',$.detail.responseElements.containerInstance.registeredResources[0].integerValue)"
+                        "N.$": "States.Format('{}',$.CPU[0])"
                     },
                     "Memory": {
-                        "N.$": "States.Format('{}',$.detail.responseElements.containerInstance.registeredResources[1].integerValue)"
+                        "N.$": "States.Format('{}',$.Memory[0])"
                     },
                     "Events": {
                         "L": [{
@@ -65,7 +77,7 @@
                     }
                 }
             },
-            "Next": "SQS SendMessage",
+            "Next": "Get Fields SQS",
             "Catch": [{
                 "ErrorEquals": ["DynamoDB.ConditionalCheckFailedException"],
                 "Next": "DynamoDB UpdateItem",
@@ -105,42 +117,54 @@
                     }
                 }
             },
-            "Retry": [ {
-                "ErrorEquals": [ "States.ALL"  ],
+            "Retry": [{
+                "ErrorEquals": ["States.ALL"],
                 "IntervalSeconds": 1,
                 "BackoffRate": 2.0,
                 "MaxAttempts": 10
-                } ],
-            "Next": "SQS SendMessage"
+            }],
+            "Next": "Get Fields SQS"
+        },
+        "Get Fields SQS": {
+            "Type": "Pass",
+            "Next": "SQS SendMessage",
+            "Comment": "Filter the elements using json path",
+            "Parameters": {
+                "detail.$": "$$.Execution.Input.detail",
+                "AvailabilityZone.$": "$$.Execution.Input.detail.responseElements.containerInstance.attributes[?(@.name==ecs.availability-zone)].value",
+                "InstanceType.$": "$$.Execution.Input.detail.responseElements.containerInstance.attributes[?(@.name==ecs.instance-type)].value",
+                "AmiId.$": "$$.Execution.Input.detail.responseElements.containerInstance.attributes[?(@.name==ecs.ami-id)].value",
+                "CPU.$": "$$.Execution.Input.detail.responseElements.containerInstance.registeredResources[?(@.name==CPU)].integerValue",
+                "Memory.$": "$$.Execution.Input.detail.responseElements.containerInstance.registeredResources[?(@.name==MEMORY)].integerValue"
+            }
         },
         "SQS SendMessage": {
             "Type": "Task",
             "Resource": "arn:aws:states:::sqs:sendMessage",
-            "InputPath": "$$.Execution.Input",
             "Parameters": {
                 "QueueUrl": "${SQSMetricsQueue}",
                 "MessageBody": {
                     "Dimensions": {
-                        "AvailabilityZone.$": "$.detail.responseElements.containerInstance.attributes[15].value",
+                        "AvailabilityZone.$": "$.AvailabilityZone[0]",
                         "ECSCluster.$": "$.detail.requestParameters.cluster",
-                        "InstanceType.$": "$.detail.responseElements.containerInstance.attributes[53].value"
+                        "InstanceType.$": "$.InstanceType[0]"
                     },
                     "Properties": {
                         "InstanceId.$": "$.detail.responseElements.containerInstance.ec2InstanceId",
                         "ECSCluster.$": "$.detail.requestParameters.cluster",
-                        "InstanceType.$": "$.detail.responseElements.containerInstance.attributes[53].value",
-                        "AvailabilityZone.$": "$.detail.responseElements.containerInstance.attributes[15].value"
+                        "InstanceType.$": "$.InstanceType[0]",
+                        "AvailabilityZone.$": "$.AvailabilityZone[0]"
                     },
                     "LastEventType.$": "$.detail.eventName",
                     "MetricTime.$": "$.detail.eventTime"
                 }
             },
-            "Retry": [ {
-                "ErrorEquals": [ "States.ALL"  ],
+            "Retry": [{
+                "ErrorEquals": ["States.ALL"],
                 "IntervalSeconds": 1,
                 "BackoffRate": 2.0,
                 "MaxAttempts": 10
-                } ],
+            }],
             "Next": "Success"
         },
         "Success": {

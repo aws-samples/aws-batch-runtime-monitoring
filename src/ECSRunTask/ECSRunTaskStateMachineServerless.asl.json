@@ -21,10 +21,10 @@
             "Parameters": {
                 "Region.$": "$.detail.awsRegion",
                 "LastEventTime.$": "$.detail.eventTime",
-                "JobId.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[0].value",
-                "CEName.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[2].value",
-                "JQName.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[1].value",
-                "JobAttempt.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[3].value",
+                "JobId.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name==AWS_BATCH_JOB_ID)].value",
+                "CEName.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name==AWS_BATCH_CE_NAME)].value",
+                "JQName.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name==AWS_BATCH_JQ_NAME)].value",
+                "JobAttempt.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name==AWS_BATCH_JOB_ATTEMPT)].value",
                 "ECSCluster.$": "$.detail.requestParameters.cluster"
             }
         },
@@ -36,15 +36,15 @@
                 "QueueUrl": "${SQSMetricsQueue}",
                 "MessageBody": {
                     "Dimensions": {
-                        "JobQueue.$": "$.JQName",
+                        "JobQueue.$": "$.JQName[0]",
                         "ECSCluster.$": "$.ECSCluster",
-                        "ComputeEnvironment.$": "$.CEName"
+                        "ComputeEnvironment.$": "$.CEName[0]"
                     },
                     "Properties": {
-                        "JobId.$": "$.JobId",
+                        "JobId.$": "$.JobId[0]",
                         "ECSCluster.$": "$.ECSCluster",
-                        "JobQueue.$": "$.JQName",
-                        "ComputeEnvironment.$": "$.CEName"
+                        "JobQueue.$": "$.JQName[0]",
+                        "ComputeEnvironment.$": "$.CEName[0]"
                     },
                     "MetricName": "RunTask Call",
                     "MetricTime.$": "$.LastEventTime"
@@ -61,20 +61,15 @@
         "Is Array Job?": {
             "Type": "Choice",
             "Choices": [{
-                "And": [{
-                    "Variable": "$$.Execution.Input.detail.requestParameters.overrides.containerOverrides[0].environment[4]",
-                    "IsPresent": true
-                }, {
-                    "Variable": "$$.Execution.Input.detail.requestParameters.overrides.containerOverrides[0].environment[4].name",
-                    "StringEquals": "AWS_BATCH_JOB_ARRAY_INDEX"
-                }],
+                "Variable": "$$.Execution.Input.detail.requestParameters.overrides.containerOverrides[0].environment[4]",
+                 "IsPresent": true,
                 "Next": "Yes, add job index"
             }],
             "Default": "Is task placed onto an instance?"
         },
         "Yes, add job index": {
             "Type": "Pass",
-            "InputPath": "$$.Execution.Input.detail.requestParameters.overrides.containerOverrides[0].environment[4].value",
+            "InputPath": "$$.Execution.Input.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name==AWS_BATCH_JOB_ARRAY_INDEX)].value",
             "ResultPath": "$.JobArrayIndex",
             "Next": "Is task placed onto an instance?"
         },
@@ -154,9 +149,9 @@
                 "QueueUrl": "${SQSMetricsQueue}",
                 "MessageBody": {
                     "Dimensions": {
-                        "JobQueue.$": "$.JQName",
+                        "JobQueue.$": "$.JQName[0]",
                         "ECSCluster.$": "$.ECSCluster",
-                        "ComputeEnvironment.$": "$.CEName",
+                        "ComputeEnvironment.$": "$.CEName[0]",
                         "AvailabilityZone.$": "$.AvailabilityZone",
                         "InstanceType.$": "$.InstanceProperties.Item.InstanceType.S"
                     },
@@ -164,8 +159,8 @@
                         "JobId.$": "$.JobId",
                         "InstanceId.$": "$.InstanceProperties.Item.InstanceId.S",
                         "ECSCluster.$": "$.ECSCluster",
-                        "JobQueue.$": "$.JQName",
-                        "ComputeEnvironment.$": "$.CEName",
+                        "JobQueue.$": "$.JQName[0]",
+                        "ComputeEnvironment.$": "$.CEName[0]",
                         "AvailabilityZone.$": "$.AvailabilityZone",
                         "InstanceType.$": "$.InstanceProperties.Item.InstanceType.S"
                     },
