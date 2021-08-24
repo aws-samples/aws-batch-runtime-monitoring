@@ -10,6 +10,7 @@
         "Region.$": "$.region",
         "JobQueue.$": "$.detail.jobQueue",
         "JobName.$": "$.detail.jobName",
+        "JobDefinition.$": "$.detail.jobDefinition",
         "LastEventType.$": "$.detail.status",
         "LastEventTime.$": "$.time"
       }
@@ -151,7 +152,8 @@
             "JobState.$": "$.LastEventType",
             "AvailabilityZone.$": "$.ECSInstance.Item.AvailabilityZone.S",
             "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
-            "InstanceType.$": "$.ECSInstance.Item.InstanceType.S"
+            "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
+            "JobDefinition.$":"$.JobDefinition"
           },
           "Properties": {
             "JobId.$": "$.JobId",
@@ -161,7 +163,8 @@
             "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
             "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
             "InstanceId.$": "$.ECSInstance.Item.InstanceId.S",
-            "JobName.$": "$.JobName"
+            "JobName.$": "$.JobName",
+            "JobDefinition.$":"$.JobDefinition"
           },
           "MetricName.$": "$.LastEventType",
           "MetricTime.$": "$.LastEventTime"
@@ -183,13 +186,15 @@
         "MessageBody": {
           "Dimensions": {
             "JobQueue.$": "$.JobQueue",
-            "JobState.$": "$.LastEventType"
+            "JobState.$": "$.LastEventType",
+            "JobDefinition.$":"$.JobDefinition"
           },
           "Properties": {
             "JobId.$": "$.JobId",
             "JobQueue.$": "$.JobQueue",
             "JobState.$": "$.LastEventType",
-            "JobName.$": "$.JobName"
+            "JobName.$": "$.JobName",
+            "JobDefinition.$":"$.JobDefinition"
           },
           "MetricName.$": "$.LastEventType",
           "MetricTime.$": "$.LastEventTime"

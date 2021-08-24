@@ -1043,7 +1043,7 @@ Resources:
                         "height": 6,
                         "width": 6,
                         "y": 34,
-                        "x": 0,
+                        "x": 12,
                         "type": "metric",
                         "properties": {
                             "metrics": [
@@ -1097,9 +1097,9 @@ Resources:
                     },
                     {
                         "height": 6,
-                        "width": 6,
+                        "width": 12,
                         "y": 34,
-                        "x": 6,
+                        "x": 0,
                         "type": "metric",
                         "properties": {
                             "metrics": [
@@ -1127,7 +1127,7 @@ Resources:
                         "height": 6,
                         "width": 6,
                         "y": 34,
-                        "x": 12,
+                        "x": 18,
                         "type": "metric",
                         "properties": {
                             "metrics": [
@@ -1195,6 +1195,184 @@ Resources:
                             "stacked": true,
                             "region": "${DeployedRegion}",
                             "title": "Jobs FAILED - Job Queue",
+                            "yAxis": {
+                                "left": {
+                                    "label": "Jobs",
+                                    "showUnits": false
+                                },
+                                "right": {
+                                    "showUnits": false
+                                }
+                            },
+                            "liveData": true
+                        }
+                    },
+                    {
+                        "height": 6,
+                        "width": 12,
+                        "y": 41,
+                        "x": 0,
+                        "type": "metric",
+                        "properties": {
+                            "metrics": [
+                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"RUNNING\"', 'Sum', 60)", "id": "e5" } ]
+                            ],
+                            "period": 60,
+                            "stat": "Sum",
+                            "view": "timeSeries",
+                            "stacked": true,
+                            "region": "${DeployedRegion}",
+                            "title": "RUNNING - Job Definition",
+                            "yAxis": {
+                                "left": {
+                                    "label": "Jobs",
+                                    "showUnits": false
+                                },
+                                "right": {
+                                    "showUnits": false
+                                }
+                            },
+                            "liveData": true
+                        }
+                    },
+                    {
+                        "height": 1,
+                        "width": 24,
+                        "y": 40,
+                        "x": 0,
+                        "type": "text",
+                        "properties": {
+                            "markdown": "# Jobs States per Job Definition\n"
+                        }
+                    },
+                    {
+                        "height": 6,
+                        "width": 6,
+                        "y": 41,
+                        "x": 12,
+                        "type": "metric",
+                        "properties": {
+                            "metrics": [
+                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"SUCCEEDED\"', 'Sum', 60)", "id": "e5" } ]
+                            ],
+                            "period": 60,
+                            "stat": "Sum",
+                            "view": "timeSeries",
+                            "stacked": true,
+                            "region": "${DeployedRegion}",
+                            "title": "SUCCEEDED - Job Definition",
+                            "yAxis": {
+                                "left": {
+                                    "label": "Jobs",
+                                    "showUnits": false
+                                },
+                                "right": {
+                                    "showUnits": false
+                                }
+                            },
+                            "liveData": true
+                        }
+                    },
+                    {
+                        "height": 6,
+                        "width": 6,
+                        "y": 41,
+                        "x": 18,
+                        "type": "metric",
+                        "properties": {
+                            "metrics": [
+                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"FAILED\"', 'Sum', 60)", "id": "e5" } ]
+                            ],
+                            "period": 60,
+                            "stat": "Sum",
+                            "view": "timeSeries",
+                            "stacked": true,
+                            "region": "${DeployedRegion}",
+                            "title": "FAILED - Job Definition",
+                            "yAxis": {
+                                "left": {
+                                    "label": "Jobs",
+                                    "showUnits": false
+                                },
+                                "right": {
+                                    "showUnits": false
+                                }
+                            },
+                            "liveData": true
+                        }
+                    },
+                    {
+                        "height": 6,
+                        "width": 6,
+                        "y": 47,
+                        "x": 18,
+                        "type": "metric",
+                        "properties": {
+                            "metrics": [
+                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"STARTING\"', 'Sum', 60)", "id": "e5" } ]
+                            ],
+                            "period": 60,
+                            "stat": "Sum",
+                            "view": "timeSeries",
+                            "stacked": true,
+                            "region": "${DeployedRegion}",
+                            "title": "STARTING - Job Definition",
+                            "yAxis": {
+                                "left": {
+                                    "label": "Jobs",
+                                    "showUnits": false
+                                },
+                                "right": {
+                                    "showUnits": false
+                                }
+                            },
+                            "liveData": true
+                        }
+                    },
+                    {
+                        "height": 6,
+                        "width": 12,
+                        "y": 47,
+                        "x": 0,
+                        "type": "metric",
+                        "properties": {
+                            "metrics": [
+                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"RUNNABLE\"', 'Sum', 60)", "id": "e5" } ]
+                            ],
+                            "period": 60,
+                            "stat": "Sum",
+                            "view": "timeSeries",
+                            "stacked": true,
+                            "region": "${DeployedRegion}",
+                            "title": "RUNNABLE - Job Definition",
+                            "yAxis": {
+                                "left": {
+                                    "label": "Jobs",
+                                    "showUnits": false
+                                },
+                                "right": {
+                                    "showUnits": false
+                                }
+                            },
+                            "liveData": true
+                        }
+                    },
+                    {
+                        "height": 6,
+                        "width": 6,
+                        "y": 47,
+                        "x": 12,
+                        "type": "metric",
+                        "properties": {
+                            "metrics": [
+                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"PENDING\"', 'Sum', 60)", "id": "e5" } ]
+                            ],
+                            "period": 60,
+                            "stat": "Sum",
+                            "view": "timeSeries",
+                            "stacked": true,
+                            "region": "${DeployedRegion}",
+                            "title": "PENDING - Job Definition",
                             "yAxis": {
                                 "left": {
                                     "label": "Jobs",

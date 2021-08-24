@@ -51,7 +51,6 @@ def embedded_metrics_placed_jobs(dimensions, properties, metric_name, metric_tim
         raise Exception(message)
     return
 
-
 def lambda_handler(event, context):
 
     logger.info(f"Transform event to metric {json.dumps(event)}")
@@ -74,6 +73,14 @@ def lambda_handler(event, context):
         if 'JobQueue' in rec['Dimensions']:
             job_queue = rec['Dimensions']['JobQueue'].split('/')[-1]
             rec['Dimensions']['JobQueue'] = job_queue
+
+        if 'JobDefinition' in rec['Properties']:
+            job_queue = rec['Properties']['JobDefinition'].split('/')[-1]
+            rec['Properties']['JobDefinition'] = job_queue
+
+        if 'JobDefinition' in rec['Dimensions']:
+            job_queue = rec['Dimensions']['JobDefinition'].split('/')[-1]
+            rec['Dimensions']['JobDefinition'] = job_queue
 
         embedded_metrics_placed_jobs(
             rec["Dimensions"],
