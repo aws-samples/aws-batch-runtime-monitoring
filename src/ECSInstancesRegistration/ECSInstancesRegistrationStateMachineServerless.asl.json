@@ -19,11 +19,11 @@
             "Comment": "Filter the elements using json path",
             "Parameters": {
                 "detail.$": "$.detail",
-                "AvailabilityZone.$": "$.detail.responseElements.containerInstance.attributes[?(@.name==ecs.availability-zone)].value",
-                "InstanceType.$": "$.detail.responseElements.containerInstance.attributes[?(@.name==ecs.instance-type)].value",
-                "AmiId.$": "$.detail.responseElements.containerInstance.attributes[?(@.name==ecs.ami-id)].value",
-                "CPU.$": "$.detail.responseElements.containerInstance.registeredResources[?(@.name==CPU)].integerValue",
-                "Memory.$": "$.detail.responseElements.containerInstance.registeredResources[?(@.name==MEMORY)].integerValue"
+                "AvailabilityZone.$": "$.detail.responseElements.containerInstance.attributes[?(@.name=='ecs.availability-zone')].value",
+                "InstanceType.$": "$.detail.responseElements.containerInstance.attributes[?(@.name=='ecs.instance-type')].value",
+                "AmiId.$": "$.detail.responseElements.containerInstance.attributes[?(@.name=='ecs.ami-id')].value",
+                "CPU.$": "$.detail.responseElements.containerInstance.registeredResources[?(@.name=='CPU')].integerValue",
+                "Memory.$": "$.detail.responseElements.containerInstance.registeredResources[?(@.name=='MEMORY')].integerValue"
             }
         },
         "DynamoDB PutItem": {
@@ -131,11 +131,11 @@
             "Comment": "Filter the elements using json path",
             "Parameters": {
                 "detail.$": "$$.Execution.Input.detail",
-                "AvailabilityZone.$": "$$.Execution.Input.detail.responseElements.containerInstance.attributes[?(@.name==ecs.availability-zone)].value",
-                "InstanceType.$": "$$.Execution.Input.detail.responseElements.containerInstance.attributes[?(@.name==ecs.instance-type)].value",
-                "AmiId.$": "$$.Execution.Input.detail.responseElements.containerInstance.attributes[?(@.name==ecs.ami-id)].value",
-                "CPU.$": "$$.Execution.Input.detail.responseElements.containerInstance.registeredResources[?(@.name==CPU)].integerValue",
-                "Memory.$": "$$.Execution.Input.detail.responseElements.containerInstance.registeredResources[?(@.name==MEMORY)].integerValue"
+                "AvailabilityZone.$": "$$.Execution.Input.detail.responseElements.containerInstance.attributes[?(@.name=='ecs.availability-zone')].value",
+                "InstanceType.$": "$$.Execution.Input.detail.responseElements.containerInstance.attributes[?(@.name=='ecs.instance-type')].value",
+                "AmiId.$": "$$.Execution.Input.detail.responseElements.containerInstance.attributes[?(@.name=='ecs.ami-id')].value",
+                "CPU.$": "$$.Execution.Input.detail.responseElements.containerInstance.registeredResources[?(@.name=='CPU')].integerValue",
+                "Memory.$": "$$.Execution.Input.detail.responseElements.containerInstance.registeredResources[?(@.name=='MEMORY')].integerValue"
             }
         },
         "SQS SendMessage": {

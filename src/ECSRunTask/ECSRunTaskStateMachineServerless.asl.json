@@ -21,10 +21,10 @@
             "Parameters": {
                 "Region.$": "$.detail.awsRegion",
                 "LastEventTime.$": "$.detail.eventTime",
-                "JobId.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name==AWS_BATCH_JOB_ID)].value",
-                "CEName.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name==AWS_BATCH_CE_NAME)].value",
-                "JQName.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name==AWS_BATCH_JQ_NAME)].value",
-                "JobAttempt.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name==AWS_BATCH_JOB_ATTEMPT)].value",
+                "JobId.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name=='AWS_BATCH_JOB_ID')].value",
+                "CEName.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name=='AWS_BATCH_CE_NAME')].value",
+                "JQName.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name=='AWS_BATCH_JQ_NAME')].value",
+                "JobAttempt.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name=='AWS_BATCH_JOB_ATTEMPT')].value",
                 "ECSCluster.$": "$.detail.requestParameters.cluster"
             }
         },
@@ -69,7 +69,7 @@
         },
         "Yes, add job index": {
             "Type": "Pass",
-            "InputPath": "$$.Execution.Input.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name==AWS_BATCH_JOB_ARRAY_INDEX)].value",
+            "InputPath": "$$.Execution.Input.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name=='AWS_BATCH_JOB_ARRAY_INDEX')].value",
             "ResultPath": "$.JobArrayIndex",
             "Next": "Is task placed onto an instance?"
         },
