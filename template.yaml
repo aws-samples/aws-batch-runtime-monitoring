@@ -23,7 +23,7 @@ Description: >
 Resources:
   # DynamoDB Tables --------------------------------------
 
-  ECSInstancesMetadataTableServerless:
+  ECSInstancesMetadataTable:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions:
@@ -32,6 +32,43 @@ Resources:
       KeySchema:
         - AttributeName: ContainerInstanceId
           KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+      TimeToLiveSpecification:
+        AttributeName: ExpirationTime
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+         PointInTimeRecoveryEnabled: true
+      Tags:
+      - Key: "Application"
+        Value: "BatchMetricsDashboards"
+
+
+  BatchJobsMetadataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: JobId
+          AttributeType: S
+        - AttributeName: JobState
+          AttributeType: S
+        - AttributeName: InstanceId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: JobId
+          KeyType: HASH
+        - AttributeName: JobState
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: InstanceId
+          KeySchema:
+            - AttributeName: InstanceId
+              KeyType: HASH
+          Projection:
+            ProjectionType: KEYS_ONLY
       BillingMode: PAY_PER_REQUEST
       StreamSpecification:
         StreamViewType: NEW_IMAGE
@@ -62,7 +99,7 @@ Resources:
     Properties:
       DefinitionUri: src/ECSInstancesRegistration/ECSInstancesRegistrationStateMachineServerless.asl.json
       DefinitionSubstitutions:
-        ECSRegistrationTable: !Ref ECSInstancesMetadataTableServerless
+        ECSRegistrationTable: !Ref ECSInstancesMetadataTable
         SQSMetricsQueue: !Ref QueueInstanceRegistration
       Tags:
         Application: BatchMetricsDashboards
@@ -89,7 +126,7 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt QueueInstanceRegistration.QueueName
         - DynamoDBWritePolicy:
-            TableName: !Ref ECSInstancesMetadataTableServerless
+            TableName: !Ref ECSInstancesMetadataTable
         - CloudWatchLogsFullAccess
       Logging:
         Destinations:
@@ -140,7 +177,7 @@ Resources:
     Properties:
       DefinitionUri: src/ECSRunTask/ECSRunTaskStateMachineServerless.asl.json
       DefinitionSubstitutions:
-        ECSRegistrationTable: !Ref ECSInstancesMetadataTableServerless
+        ECSRegistrationTable: !Ref ECSInstancesMetadataTable
         SQSMetricsQueue: !Ref QueueRunTask
       Tags:
         Application: BatchMetricsDashboards
@@ -166,7 +203,7 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt QueueRunTask.QueueName
         - DynamoDBReadPolicy:
-            TableName: !Ref ECSInstancesMetadataTableServerless
+            TableName: !Ref ECSInstancesMetadataTable
         - CloudWatchLogsFullAccess
       Logging:
         Destinations:
@@ -217,7 +254,8 @@ Resources:
     Properties:
       DefinitionUri: src/BatchJobsStates/JobStatesStateMachineServerless.asl.json
       DefinitionSubstitutions:
-        ECSRegistrationTable: !Ref ECSInstancesMetadataTableServerless
+        ECSRegistrationTable: !Ref ECSInstancesMetadataTable
+        BatchJobTable: !Ref BatchJobsMetadataTable
         SQSMetricsQueue: !Ref QueueJobsStates
       Tags:
         Application: BatchMetricsDashboards
@@ -238,7 +276,9 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt QueueJobsStates.QueueName
         - DynamoDBReadPolicy:
-            TableName: !Ref ECSInstancesMetadataTableServerless
+            TableName: !Ref ECSInstancesMetadataTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref BatchJobsMetadataTable
         - CloudWatchLogsFullAccess
       Logging:
         Destinations:

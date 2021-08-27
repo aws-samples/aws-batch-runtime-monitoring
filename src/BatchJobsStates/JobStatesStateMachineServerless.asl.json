@@ -131,7 +131,7 @@
         {
           "Variable": "$.ECSInstance.Item",
           "IsPresent": true,
-          "Next": "SQS SendMessage Job State Associated"
+          "Next": "Add associated job to DDB Table and SQS queue"
         }
       ],
       "Default": "Wait for new request on ECS Registration table"
@@ -141,41 +141,94 @@
       "Seconds": 3,
       "Next": "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId"
     },
-    "SQS SendMessage Job State Associated": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::sqs:sendMessage",
-      "Parameters": {
-        "QueueUrl": "${SQSMetricsQueue}",
-        "MessageBody": {
-          "Dimensions": {
-            "JobQueue.$": "$.JobQueue",
-            "JobState.$": "$.LastEventType",
-            "AvailabilityZone.$": "$.ECSInstance.Item.AvailabilityZone.S",
-            "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
-            "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
-            "JobDefinition.$":"$.JobDefinition"
-          },
-          "Properties": {
-            "JobId.$": "$.JobId",
-            "JobQueue.$": "$.JobQueue",
-            "JobState.$": "$.LastEventType",
-            "AvailabilityZone.$": "$.ECSInstance.Item.AvailabilityZone.S",
-            "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
-            "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
-            "InstanceId.$": "$.ECSInstance.Item.InstanceId.S",
-            "JobName.$": "$.JobName",
-            "JobDefinition.$":"$.JobDefinition"
-          },
-          "MetricName.$": "$.LastEventType",
-          "MetricTime.$": "$.LastEventTime"
+    "Add associated job to DDB Table and SQS queue": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "SQS SendMessage Job State Associated",
+          "States": {
+            "SQS SendMessage Job State Associated": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::sqs:sendMessage",
+            "Parameters": {
+              "QueueUrl": "${SQSMetricsQueue}",
+              "MessageBody": {
+                "Dimensions": {
+                  "JobQueue.$": "$.JobQueue",
+                  "JobState.$": "$.LastEventType",
+                  "AvailabilityZone.$": "$.ECSInstance.Item.AvailabilityZone.S",
+                  "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
+                  "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
+                  "JobDefinition.$":"$.JobDefinition"
+                },
+                "Properties": {
+                  "JobId.$": "$.JobId",
+                  "JobQueue.$": "$.JobQueue",
+                  "JobState.$": "$.LastEventType",
+                  "AvailabilityZone.$": "$.ECSInstance.Item.AvailabilityZone.S",
+                  "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
+                  "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
+                  "InstanceId.$": "$.ECSInstance.Item.InstanceId.S",
+                  "JobName.$": "$.JobName",
+                  "JobDefinition.$":"$.JobDefinition"
+                },
+                "MetricName.$": "$.LastEventType",
+                "MetricTime.$": "$.LastEventTime"
+              }
+            },
+            "Retry": [ {
+              "ErrorEquals": [ "States.ALL"  ],
+              "IntervalSeconds": 1,
+              "BackoffRate": 2.0,
+              "MaxAttempts": 10
+              } ],
+            "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Add Job to DDB Table",
+          "States": {
+            "Add Job to DDB Table": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::dynamodb:putItem",
+              "Parameters": {
+                "TableName": "${BatchJobTable}",
+                "Item": {
+                  "JobId": {
+                    "S.$": "$.JobId"
+                  },
+                  "JobState": {
+                    "S.$": "$.LastEventType"
+                  },
+                  "JobName": {
+                    "S.$": "$.JobName"
+                  },
+                  "JobDefinition": {
+                    "S.$": "$.JobDefinition"
+                  },
+                  "JobQueue": {
+                    "S.$": "$.JobQueue"
+                  },
+                  "InstanceType": {
+                    "S.$": "$.ECSInstance.Item.InstanceType.S"
+                  },
+                  "InstanceId": {
+                    "S.$": "$.ECSInstance.Item.InstanceId.S"
+                  },
+                  "AvailabilityZone": {
+                    "S.$": "$.ECSInstance.Item.AvailabilityZone.S"
+                  },
+                  "ECSCluster": {
+                    "S.$": "$.ECSInstance.Item.ECSCluster.S"
+                  }
+                }
+              },
+              "End": true
+            }
+          }
         }
-      },
-      "Retry": [ {
-        "ErrorEquals": [ "States.ALL"  ],
-        "IntervalSeconds": 1,
-        "BackoffRate": 2.0,
-        "MaxAttempts": 10
-        } ],
+      ],
       "End": true
     },
     "SQS SendMessage Job State Not Associated": {
