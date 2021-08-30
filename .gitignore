@@ -248,3 +248,4 @@ $RECYCLE.BIN/
 .aws-sam*
 samconfig.toml
 test-events
+build.toml
