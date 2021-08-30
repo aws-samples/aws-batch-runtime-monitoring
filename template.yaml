@@ -111,7 +111,6 @@ Resources:
       Runtime: python3.8
       ReservedConcurrentExecutions: 30
       Policies:
-        - CloudWatchPutMetricPolicy: {}
         - SQSPollerPolicy:
             QueueName: !GetAtt QueueInstanceRegistration.QueueName
       Timeout: 10
@@ -189,7 +188,6 @@ Resources:
       Runtime: python3.8
       ReservedConcurrentExecutions: 30
       Policies:
-        - CloudWatchPutMetricPolicy: {}
         - SQSPollerPolicy:
             QueueName: !GetAtt QueueRunTask.QueueName
       Timeout: 10
@@ -262,7 +260,6 @@ Resources:
       Runtime: python3.8
       ReservedConcurrentExecutions: 70
       Policies:
-        - CloudWatchPutMetricPolicy: {}
         - SQSPollerPolicy:
             QueueName: !GetAtt QueueJobsStates.QueueName
       Timeout: 10
