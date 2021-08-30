@@ -78,6 +78,12 @@
                 }
             },
             "Next": "Get Fields SQS",
+            "Retry": [{
+                "ErrorEquals": ["DynamoDB.AmazonDynamoDBException"],
+                "IntervalSeconds": 1,
+                "BackoffRate": 2.0,
+                "MaxAttempts": 3
+            }],
             "Catch": [{
                 "ErrorEquals": ["DynamoDB.ConditionalCheckFailedException"],
                 "Next": "DynamoDB UpdateItem",
