@@ -184,8 +184,11 @@
                                 "InstanceId": {
                                     "S.$": "$.ECSInstance.Item.InstanceId.S"
                                 },
-                                "JobState": {
+                                "LastEventType": {
                                     "S.$": "$.LastEventType"
+                                },
+                                "LastEventTime": {
+                                    "S.$": "$.LastEventTime"
                                 },
                                 "JobName": {
                                     "S.$": "$.JobName"
