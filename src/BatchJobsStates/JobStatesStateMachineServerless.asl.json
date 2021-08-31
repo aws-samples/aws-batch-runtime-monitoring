@@ -231,6 +231,55 @@
                             "BackoffRate": 2.0,
                             "MaxAttempts": 3
                         }],
+                        "Catch": [{
+                            "ErrorEquals": ["DynamoDB.ConditionalCheckFailedException"],
+                            "Next": "DynamoDB UpdateItem",
+                            "ResultPath": null,
+                            "Comment": "Item exist in the database, appending"
+                        }],
+                        "End": true
+                    },
+                    "DynamoDB UpdateItem": {
+                        "Type": "Task",
+                        "Resource": "arn:aws:states:::dynamodb:updateItem",
+                        "Parameters": {
+                            "TableName": "${BatchJobTable}",
+                            "Key": {
+                                "JobId": {
+                                    "S.$": "$.JobId"
+                                },
+                                "InstanceId": {
+                                    "S.$": "$.ECSInstance.Item.InstanceId.S"
+                                }
+                            },
+                            "UpdateExpression": "SET LastEventTime = :LastEventTime, LastEventType = :LastEventType, Events = list_append(Events, :NewEvent)",
+                            "ExpressionAttributeValues": {
+                                ":NewEvent": {
+                                    "L": [{
+                                        "M": {
+                                            "EventType": {
+                                                "S.$": "$.LastEventType"
+                                            },
+                                            "EventTime": {
+                                                "S.$": "$.LastEventTime"
+                                            }
+                                        }
+                                    }]
+                                },
+                                ":LastEventTime": {
+                                    "S.$": "$.LastEventTime"
+                                },
+                                ":LastEventType": {
+                                    "S.$": "$.LastEventType"
+                                }
+                            }
+                        },
+                        "Retry": [{
+                            "ErrorEquals": ["States.ALL"],
+                            "IntervalSeconds": 1,
+                            "BackoffRate": 2.0,
+                            "MaxAttempts": 10
+                        }],
                         "End": true
                     }
                 }

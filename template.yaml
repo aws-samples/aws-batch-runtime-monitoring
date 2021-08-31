@@ -53,14 +53,12 @@ Resources:
       AttributeDefinitions:
         - AttributeName: JobId
           AttributeType: S
-        - AttributeName: JobState
-          AttributeType: S
         - AttributeName: InstanceId
           AttributeType: S
       KeySchema:
         - AttributeName: JobId
           KeyType: HASH
-        - AttributeName: JobState
+        - AttributeName: InstanceId
           KeyType: RANGE
       GlobalSecondaryIndexes:
         - IndexName: InstanceId
