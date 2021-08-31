@@ -1,269 +1,275 @@
 {
-  "Comment": "Job States Handler",
-  "StartAt": "Get Common Fields",
-  "States": {
-    "Get Common Fields": {
-      "Type": "Pass",
-      "Next": "Check Job State",
-      "Parameters": {
-        "JobId.$": "$.detail.jobId",
-        "Region.$": "$.region",
-        "JobQueue.$": "$.detail.jobQueue",
-        "JobName.$": "$.detail.jobName",
-        "JobDefinition.$": "$.detail.jobDefinition",
-        "LastEventType.$": "$.detail.status",
-        "LastEventTime.$": "$.time"
-      }
-    },
-    "Check Job State": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Or": [
-            {
-              "Variable": "$.LastEventType",
-              "StringEquals": "SUCCEEDED"
-            },
-            {
-              "Variable": "$.LastEventType",
-              "StringEquals": "FAILED"
-            },
-            {
-              "Variable": "$.LastEventType",
-              "StringEquals": "RUNNING"
-            },
-            {
-              "Variable": "$.LastEventType",
-              "StringEquals": "STARTING"
+    "Comment": "Job States Handler",
+    "StartAt": "Get Common Fields",
+    "States": {
+        "Get Common Fields": {
+            "Type": "Pass",
+            "Next": "Check Job State",
+            "Parameters": {
+                "JobId.$": "$.detail.jobId",
+                "Region.$": "$.region",
+                "JobQueue.$": "$.detail.jobQueue",
+                "JobName.$": "$.detail.jobName",
+                "JobDefinition.$": "$.detail.jobDefinition",
+                "LastEventType.$": "$.detail.status",
+                "LastEventTime.$": "$.time"
             }
-          ],
-          "Next": "Contain Array Properties?"
-        }
-      ],
-      "Default": "SQS SendMessage Job State Not Associated"
-    },
-    "Contain Array Properties?": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$$.Execution.Input.detail.arrayProperties",
-          "IsPresent": true,
-          "Next": "Get Array Properties"
-        }
-      ],
-      "Default": "Get Job State for Instance Association"
-    },
-    "Get Array Properties": {
-      "Type": "Pass",
-      "Next": "Is Parent Job?",
-      "InputPath": "$$.Execution.Input.detail.arrayProperties",
-      "ResultPath": "$.ArrayProperties"
-    },
-    "Is Parent Job?": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$.ArrayProperties.size",
-          "IsPresent": true,
-          "Next": "Skip Event"
-        }
-      ],
-      "Default": "Get Job State for Instance Association"
-    },
-    "Get Job State for Instance Association": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$$.Execution.Input.detail.container.containerInstanceArn",
-          "IsPresent": true,
-          "Next": "Get ContainerInstanceId from containerInstanceArn"
-        }
-      ],
-      "Default": "Get Job State for Instance Association Array"
-    },
-    "Get Job State for Instance Association Array": {
-      "Type": "Choice",
-      "InputPath": "$$.Execution.Input.detail.attempts[-1]",
-      "Choices": [
-        {
-          "Variable": "$.container.containerInstanceArn",
-          "IsPresent": true,
-          "Next": "Get ContainerInstanceId from attempts[-1].container.containerInstanceArn"
-        }
-      ],
-      "Default": "Skip Event"
-    },
-    "Get ContainerInstanceId from containerInstanceArn": {
-      "Type": "Pass",
-      "Next": "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId",
-      "InputPath": "$$.Execution.Input.detail.container.containerInstanceArn",
-      "ResultPath": "$.containerInstanceArn"
-    },
-    "Get ContainerInstanceId from attempts[-1].container.containerInstanceArn": {
-      "Type": "Pass",
-      "Next": "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId",
-      "InputPath": "$$.Execution.Input.detail.attempts[-1].container.containerInstanceArn",
-      "ResultPath": "$.containerInstanceArn"
-    },
-    "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::dynamodb:getItem",
-      "Parameters": {
-        "TableName": "${ECSRegistrationTable}",
-        "Key": {
-          "ContainerInstanceId": {
-            "S.$": "$.containerInstanceArn"
-          }
-        }
-      },
-      "Retry": [ {
-        "ErrorEquals": [ "States.ALL"  ],
-        "IntervalSeconds": 1,
-        "BackoffRate": 2.0,
-        "MaxAttempts": 5
-        } ],
-      "ResultPath": "$.ECSInstance",
-      "Next": "Check Association ContainerInstanceId to ECS Container Instance"
-    },
-    "Check Association ContainerInstanceId to ECS Container Instance": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$.ECSInstance.Item",
-          "IsPresent": true,
-          "Next": "Add associated job to DDB Table and SQS queue"
-        }
-      ],
-      "Default": "Wait for new request on ECS Registration table"
-    },
-    "Wait for new request on ECS Registration table": {
-      "Type": "Wait",
-      "Seconds": 3,
-      "Next": "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId"
-    },
-    "Add associated job to DDB Table and SQS queue": {
-      "Type": "Parallel",
-      "Branches": [
-        {
-          "StartAt": "SQS SendMessage Job State Associated",
-          "States": {
-            "SQS SendMessage Job State Associated": {
+        },
+        "Check Job State": {
+            "Type": "Choice",
+            "Choices": [{
+                "Or": [{
+                    "Variable": "$.LastEventType",
+                    "StringEquals": "SUCCEEDED"
+                }, {
+                    "Variable": "$.LastEventType",
+                    "StringEquals": "FAILED"
+                }, {
+                    "Variable": "$.LastEventType",
+                    "StringEquals": "RUNNING"
+                }, {
+                    "Variable": "$.LastEventType",
+                    "StringEquals": "STARTING"
+                }],
+                "Next": "Contain Array Properties?"
+            }],
+            "Default": "SQS SendMessage Job State Not Associated"
+        },
+        "Contain Array Properties?": {
+            "Type": "Choice",
+            "Choices": [{
+                "Variable": "$$.Execution.Input.detail.arrayProperties",
+                "IsPresent": true,
+                "Next": "Get Array Properties"
+            }],
+            "Default": "Get Job State for Instance Association"
+        },
+        "Get Array Properties": {
+            "Type": "Pass",
+            "Next": "Is Parent Job?",
+            "InputPath": "$$.Execution.Input.detail.arrayProperties",
+            "ResultPath": "$.ArrayProperties"
+        },
+        "Is Parent Job?": {
+            "Type": "Choice",
+            "Choices": [{
+                "Variable": "$.ArrayProperties.size",
+                "IsPresent": true,
+                "Next": "Skip Event"
+            }],
+            "Default": "Get Job State for Instance Association"
+        },
+        "Get Job State for Instance Association": {
+            "Type": "Choice",
+            "Choices": [{
+                "Variable": "$$.Execution.Input.detail.container.containerInstanceArn",
+                "IsPresent": true,
+                "Next": "Get ContainerInstanceId from containerInstanceArn"
+            }],
+            "Default": "Get Job State for Instance Association Array"
+        },
+        "Get Job State for Instance Association Array": {
+            "Type": "Choice",
+            "InputPath": "$$.Execution.Input.detail.attempts[-1]",
+            "Choices": [{
+                "Variable": "$.container.containerInstanceArn",
+                "IsPresent": true,
+                "Next": "Get ContainerInstanceId from attempts[-1].container.containerInstanceArn"
+            }],
+            "Default": "Skip Event"
+        },
+        "Get ContainerInstanceId from containerInstanceArn": {
+            "Type": "Pass",
+            "Next": "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId",
+            "InputPath": "$$.Execution.Input.detail.container.containerInstanceArn",
+            "ResultPath": "$.containerInstanceArn"
+        },
+        "Get ContainerInstanceId from attempts[-1].container.containerInstanceArn": {
+            "Type": "Pass",
+            "Next": "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId",
+            "InputPath": "$$.Execution.Input.detail.attempts[-1].container.containerInstanceArn",
+            "ResultPath": "$.containerInstanceArn"
+        },
+        "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::dynamodb:getItem",
+            "Parameters": {
+                "TableName": "${ECSRegistrationTable}",
+                "Key": {
+                    "ContainerInstanceId": {
+                        "S.$": "$.containerInstanceArn"
+                    }
+                }
+            },
+            "Retry": [{
+                "ErrorEquals": ["States.ALL"],
+                "IntervalSeconds": 1,
+                "BackoffRate": 2.0,
+                "MaxAttempts": 5
+            }],
+            "ResultPath": "$.ECSInstance",
+            "Next": "Check Association ContainerInstanceId to ECS Container Instance"
+        },
+        "Check Association ContainerInstanceId to ECS Container Instance": {
+            "Type": "Choice",
+            "Choices": [{
+                "Variable": "$.ECSInstance.Item",
+                "IsPresent": true,
+                "Next": "Add associated job to DDB Table and SQS queue"
+            }],
+            "Default": "Wait for new request on ECS Registration table"
+        },
+        "Wait for new request on ECS Registration table": {
+            "Type": "Wait",
+            "Seconds": 3,
+            "Next": "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId"
+        },
+        "Add associated job to DDB Table and SQS queue": {
+            "Type": "Parallel",
+            "Branches": [{
+                "StartAt": "SQS SendMessage Job State Associated",
+                "States": {
+                    "SQS SendMessage Job State Associated": {
+                        "Type": "Task",
+                        "Resource": "arn:aws:states:::sqs:sendMessage",
+                        "Parameters": {
+                            "QueueUrl": "${SQSMetricsQueue}",
+                            "MessageBody": {
+                                "Dimensions": {
+                                    "JobQueue.$": "$.JobQueue",
+                                    "JobState.$": "$.LastEventType",
+                                    "AvailabilityZone.$": "$.ECSInstance.Item.AvailabilityZone.S",
+                                    "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
+                                    "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
+                                    "JobDefinition.$": "$.JobDefinition"
+                                },
+                                "Properties": {
+                                    "JobId.$": "$.JobId",
+                                    "JobQueue.$": "$.JobQueue",
+                                    "JobState.$": "$.LastEventType",
+                                    "AvailabilityZone.$": "$.ECSInstance.Item.AvailabilityZone.S",
+                                    "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
+                                    "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
+                                    "InstanceId.$": "$.ECSInstance.Item.InstanceId.S",
+                                    "JobName.$": "$.JobName",
+                                    "JobDefinition.$": "$.JobDefinition"
+                                },
+                                "MetricName.$": "$.LastEventType",
+                                "MetricTime.$": "$.LastEventTime"
+                            }
+                        },
+                        "Retry": [{
+                            "ErrorEquals": ["States.ALL"],
+                            "IntervalSeconds": 1,
+                            "BackoffRate": 2.0,
+                            "MaxAttempts": 10
+                        }],
+                        "End": true
+                    }
+                }
+            }, {
+                "StartAt": "Add Job to DDB Table",
+                "States": {
+                    "Add Job to DDB Table": {
+                        "Type": "Task",
+                        "Comment": "Add job event to DDB table",
+                        "Resource": "arn:aws:states:::dynamodb:putItem",
+                        "Parameters": {
+                            "TableName": "${BatchJobTable}",
+                            "ConditionExpression": "attribute_not_exists(JobId) AND attribute_not_exists(InstanceId)",
+                            "Item": {
+                                "JobId": {
+                                    "S.$": "$.JobId"
+                                },
+                                "InstanceId": {
+                                    "S.$": "$.ECSInstance.Item.InstanceId.S"
+                                },
+                                "JobState": {
+                                    "S.$": "$.LastEventType"
+                                },
+                                "JobName": {
+                                    "S.$": "$.JobName"
+                                },
+                                "JobDefinition": {
+                                    "S.$": "$.JobDefinition"
+                                },
+                                "JobQueue": {
+                                    "S.$": "$.JobQueue"
+                                },
+                                "JobName": {
+                                    "S.$": "$.JobName"
+                                },
+                                "InstanceType": {
+                                    "S.$": "$.ECSInstance.Item.InstanceType.S"
+                                },
+                                "ContainerInstanceId": {
+                                    "S.$": "$.containerInstanceArn"
+                                },
+                                "AvailabilityZone": {
+                                    "S.$": "$.ECSInstance.Item.AvailabilityZone.S"
+                                },
+                                "ECSCluster": {
+                                    "S.$": "$.ECSInstance.Item.ECSCluster.S"
+                                },
+                                "Events": {
+                                    "L": [{
+                                        "M": {
+                                            "EventType": {
+                                                "S.$": "$.LastEventType"
+                                            },
+                                            "EventTime": {
+                                                "S.$": "$.LastEventTime"
+                                            }
+                                        }
+                                    }]
+                                }
+                            }
+                        },
+                        "Retry": [{
+                            "ErrorEquals": ["DynamoDB.AmazonDynamoDBException"],
+                            "IntervalSeconds": 1,
+                            "BackoffRate": 2.0,
+                            "MaxAttempts": 3
+                        }],
+                        "End": true
+                    }
+                }
+            }],
+            "End": true
+        },
+        "SQS SendMessage Job State Not Associated": {
             "Type": "Task",
             "Resource": "arn:aws:states:::sqs:sendMessage",
             "Parameters": {
-              "QueueUrl": "${SQSMetricsQueue}",
-              "MessageBody": {
-                "Dimensions": {
-                  "JobQueue.$": "$.JobQueue",
-                  "JobState.$": "$.LastEventType",
-                  "AvailabilityZone.$": "$.ECSInstance.Item.AvailabilityZone.S",
-                  "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
-                  "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
-                  "JobDefinition.$":"$.JobDefinition"
-                },
-                "Properties": {
-                  "JobId.$": "$.JobId",
-                  "JobQueue.$": "$.JobQueue",
-                  "JobState.$": "$.LastEventType",
-                  "AvailabilityZone.$": "$.ECSInstance.Item.AvailabilityZone.S",
-                  "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
-                  "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
-                  "InstanceId.$": "$.ECSInstance.Item.InstanceId.S",
-                  "JobName.$": "$.JobName",
-                  "JobDefinition.$":"$.JobDefinition"
-                },
-                "MetricName.$": "$.LastEventType",
-                "MetricTime.$": "$.LastEventTime"
-              }
-            },
-            "Retry": [ {
-              "ErrorEquals": [ "States.ALL"  ],
-              "IntervalSeconds": 1,
-              "BackoffRate": 2.0,
-              "MaxAttempts": 10
-              } ],
-            "End": true
-            }
-          }
-        },
-        {
-          "StartAt": "Add Job to DDB Table",
-          "States": {
-            "Add Job to DDB Table": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::dynamodb:putItem",
-              "Parameters": {
-                "TableName": "${BatchJobTable}",
-                "Item": {
-                  "JobId": {
-                    "S.$": "$.JobId"
-                  },
-                  "JobState": {
-                    "S.$": "$.LastEventType"
-                  },
-                  "JobName": {
-                    "S.$": "$.JobName"
-                  },
-                  "JobDefinition": {
-                    "S.$": "$.JobDefinition"
-                  },
-                  "JobQueue": {
-                    "S.$": "$.JobQueue"
-                  },
-                  "InstanceType": {
-                    "S.$": "$.ECSInstance.Item.InstanceType.S"
-                  },
-                  "InstanceId": {
-                    "S.$": "$.ECSInstance.Item.InstanceId.S"
-                  },
-                  "AvailabilityZone": {
-                    "S.$": "$.ECSInstance.Item.AvailabilityZone.S"
-                  },
-                  "ECSCluster": {
-                    "S.$": "$.ECSInstance.Item.ECSCluster.S"
-                  }
+                "QueueUrl": "${SQSMetricsQueue}",
+                "MessageBody": {
+                    "Dimensions": {
+                        "JobQueue.$": "$.JobQueue",
+                        "JobState.$": "$.LastEventType",
+                        "JobDefinition.$": "$.JobDefinition"
+                    },
+                    "Properties": {
+                        "JobId.$": "$.JobId",
+                        "JobQueue.$": "$.JobQueue",
+                        "JobState.$": "$.LastEventType",
+                        "JobName.$": "$.JobName",
+                        "JobDefinition.$": "$.JobDefinition"
+                    },
+                    "MetricName.$": "$.LastEventType",
+                    "MetricTime.$": "$.LastEventTime"
                 }
-              },
-              "End": true
-            }
-          }
+            },
+            "Retry": [{
+                "ErrorEquals": ["States.ALL"],
+                "IntervalSeconds": 1,
+                "BackoffRate": 2.0,
+                "MaxAttempts": 10
+            }],
+            "End": true
+        },
+        "Skip Event": {
+            "Type": "Pass",
+            "End": true
         }
-      ],
-      "End": true
-    },
-    "SQS SendMessage Job State Not Associated": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::sqs:sendMessage",
-      "Parameters": {
-        "QueueUrl": "${SQSMetricsQueue}",
-        "MessageBody": {
-          "Dimensions": {
-            "JobQueue.$": "$.JobQueue",
-            "JobState.$": "$.LastEventType",
-            "JobDefinition.$":"$.JobDefinition"
-          },
-          "Properties": {
-            "JobId.$": "$.JobId",
-            "JobQueue.$": "$.JobQueue",
-            "JobState.$": "$.LastEventType",
-            "JobName.$": "$.JobName",
-            "JobDefinition.$":"$.JobDefinition"
-          },
-          "MetricName.$": "$.LastEventType",
-          "MetricTime.$": "$.LastEventTime"
-        }
-      },
-      "Retry": [ {
-        "ErrorEquals": [ "States.ALL"  ],
-        "IntervalSeconds": 1,
-        "BackoffRate": 2.0,
-        "MaxAttempts": 10
-        } ],
-      "End": true
-    },
-    "Skip Event": {
-      "Type": "Pass",
-      "End": true
     }
-  }
 }
