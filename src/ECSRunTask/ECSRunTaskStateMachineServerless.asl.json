@@ -5,8 +5,13 @@
         "Is RunTask call on Batch?": {
             "Type": "Choice",
             "Choices": [{
-                "Variable": "$.detail.requestParameters.cluster",
-                "StringMatches": "*_Batch_*",
+                "Or": [{
+                    "Variable": "$.detail.requestParameters.cluster",
+                    "StringMatches": "*_Batch_*"
+                }, {
+                    "Variable": "$.detail.requestParameters.cluster",
+                    "StringMatches": "*AWSBatch-*"
+                }],
                 "Next": "Select common fields"
             }],
             "Default": "Skipping, RunTask call not on Batch"
