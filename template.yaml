@@ -412,6 +412,74 @@ Resources:
             Queue: !GetAtt JobsStatesExportSQSQueue.Arn
             BatchSize: 100
             MaximumBatchingWindowInSeconds: 5
+
+  # Glue Resources ---------------------------------------
+
+  JobsStatesGlueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+        CatalogId: !Ref AWS::AccountId
+        DatabaseInput:
+            Description: "Database for Jobs States Metadata"
+
+  JobsStatesGlueTable:
+    Type: AWS::Glue::Table
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref JobsStatesGlueDatabase
+      TableInput:
+        Name: jobsstates
+        Description: Jobs States Metadata
+        TableType: EXTERNAL_TABLE
+        Parameters:
+            classification: json
+        StorageDescriptor:
+          OutputFormat: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
+          Columns:
+            - Name: jobid
+              Type: string
+            - Name: instanceid
+              Type: string
+            - Name: eventtype
+              Type: string
+            - Name: eventtime
+              Type: timestamp
+            - Name: pasteventtype
+              Type: string
+            - Name: pasteventtime
+              Type: timestamp
+            - Name: jobdefinition
+              Type: string
+            - Name: jobqueue
+              Type: string
+            - Name: jobname
+              Type: string
+            - Name: jobvcpus
+              Type: string
+            - Name: jobmemory
+              Type: string
+            - Name: containerimage
+              Type: string
+            - Name: logstreamname
+              Type: string
+            - Name: instancetype
+              Type: string
+            - Name: containerinstanceid
+              Type: string
+            - Name: availabilityzone
+              Type: string
+            - Name: ecscluster
+              Type: string
+            - Name: instancevcpus
+              Type: string
+            - Name: instancememory
+              Type: string
+          InputFormat: org.apache.hadoop.mapred.TextInputFormat
+          Location: !Join ['', ["s3://", !Ref JobsStatesExportBucket, "/batchjobs"]]
+          SerdeInfo:
+            SerializationLibrary: org.openx.data.jsonserde.JsonSerDe
+
+  # ------------------------------------------------------
   # ------------------------------------------------------
 
   # ASG Monitoring Activation ----------------------------

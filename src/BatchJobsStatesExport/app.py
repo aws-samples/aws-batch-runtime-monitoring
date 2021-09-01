@@ -33,10 +33,9 @@ def lambda_handler(event, context):
     records = []
     for record in event["Records"]:
         rec = json.loads(record["body"])
-        records.append({"Data": json.dumps(rec)})
+        records.append({"Data": f"{json.dumps(rec)}\n"})
 
     logger.info(f"Exporting records {records}")
-
 
     try:
         # Send Event to Firehose
