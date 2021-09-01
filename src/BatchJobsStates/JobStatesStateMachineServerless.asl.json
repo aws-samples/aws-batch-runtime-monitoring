@@ -176,6 +176,7 @@
                         "Resource": "arn:aws:states:::dynamodb:putItem",
                         "Parameters": {
                             "TableName": "${BatchJobTable}",
+                            "ReturnValues": "ALL_OLD",
                             "ConditionExpression": "attribute_not_exists(JobId) AND attribute_not_exists(InstanceId)",
                             "Item": {
                                 "JobId": {
@@ -265,6 +266,7 @@
                         "Resource": "arn:aws:states:::dynamodb:updateItem",
                         "Parameters": {
                             "TableName": "${BatchJobTable}",
+                            "ReturnValues": "ALL_OLD",
                             "Key": {
                                 "JobId": {
                                     "S.$": "$.JobId"
@@ -293,6 +295,64 @@
                                 ":LastEventType": {
                                     "S.$": "$.LastEventType"
                                 }
+                            }
+                        },
+                        "Retry": [{
+                            "ErrorEquals": ["States.ALL"],
+                            "IntervalSeconds": 1,
+                            "BackoffRate": 2.0,
+                            "MaxAttempts": 10
+                        }],
+                        "Next": "Is job finishing?",
+                        "ResultPath": "$.DBResult"
+                    },
+                    "Is job finishing?": {
+                        "Type": "Choice",
+                        "Comment": "Check if the job is running or finished on the instance",
+                        "Choices": [{
+                            "Or": [{
+                                "Variable": "$.LastEventType",
+                                "StringEquals": "SUCCEEDED"
+                            }, {
+                                "Variable": "$.LastEventType",
+                                "StringEquals": "FAILED"
+                            }, {
+                                "Variable": "$.LastEventType",
+                                "StringEquals": "RUNNING"
+                            }],
+                            "Next": "SQS SendMessage to KinesisFirehose Export"
+                        }],
+                        "Default": "Job Not Finished nor Running"
+                    },
+                    "Job Not Finished nor Running": {
+                        "Type": "Succeed"
+                    },
+                    "SQS SendMessage to KinesisFirehose Export": {
+                        "Type": "Task",
+                        "Resource": "arn:aws:states:::sqs:sendMessage",
+                        "Parameters": {
+                            "QueueUrl": "${SQSExportQueue}",
+                            "MessageBody": {
+                              "JobId.$": "$.JobId",
+                              "InstanceId.$": "$.ECSInstance.Item.InstanceId.S",
+                              "FinishedEventType.$": "$.LastEventType",
+                              "FinishedEventTime.$": "$.LastEventTime",
+                              "RunningEventType.$": "$.DBResult.Attributes.LastEventType.S",
+                              "RunningEventTime.$": "$.DBResult.Attributes.LastEventTime.S",
+                              "JobName.$": "$.JobName",
+                              "JobDefinition.$": "$.JobDefinition",
+                              "JobQueue.$": "$.JobQueue",
+                              "JobName.$": "$.JobName",
+                              "JobvCPUs.$": "States.Format('{}',$$.Execution.Input.detail.container.vcpus)",
+                              "JobMemory.$": "States.Format('{}',$$.Execution.Input.detail.container.memory)",
+                              "ContainerImage.$": "$$.Execution.Input.detail.container.image",
+                              "LogStreamName.$": "$$.Execution.Input.detail.container.logStreamName",
+                              "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
+                              "ContainerInstanceId.$": "$.containerInstanceArn",
+                              "AvailabilityZone.$": "$.ECSInstance.Item.AvailabilityZone.S",
+                              "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
+                              "InstancevCPUs.$": "$.ECSInstance.Item.CPU.N",
+                              "InstanceMemory.$": "$.ECSInstance.Item.Memory.N"
                             }
                         },
                         "Retry": [{

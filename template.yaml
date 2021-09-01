@@ -241,7 +241,7 @@ Resources:
   # StateMachine Jobs States ----------------------------
 
   # SQS Queue receiving the AWS Batch Jobs States changes
-  QueueJobsStates:
+  QueueJobsStatesMetrics:
     Type: AWS::SQS::Queue
     Properties:
       KmsMasterKeyId: alias/aws/sqs
@@ -254,7 +254,8 @@ Resources:
       DefinitionSubstitutions:
         ECSRegistrationTable: !Ref ECSInstancesMetadataTable
         BatchJobTable: !Ref BatchJobsMetadataTable
-        SQSMetricsQueue: !Ref QueueJobsStates
+        SQSMetricsQueue: !Ref QueueJobsStatesMetrics
+        SQSExportQueue: !Ref JobsStatesExportSQSQueue
       Tags:
         Application: BatchMetricsDashboards
       Type: EXPRESS
@@ -272,7 +273,9 @@ Resources:
               - 'aws.batch'
       Policies:
         - SQSSendMessagePolicy:
-            QueueName: !GetAtt QueueJobsStates.QueueName
+            QueueName: !GetAtt QueueJobsStatesMetrics.QueueName
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt JobsStatesExportSQSQueue.QueueName
         - DynamoDBReadPolicy:
             TableName: !Ref ECSInstancesMetadataTable
         - DynamoDBWritePolicy:
@@ -299,7 +302,7 @@ Resources:
       ReservedConcurrentExecutions: 70
       Policies:
         - SQSPollerPolicy:
-            QueueName: !GetAtt QueueJobsStates.QueueName
+            QueueName: !GetAtt QueueJobsStatesMetrics.QueueName
       Timeout: 10
       MemorySize: 128
       Tags:
@@ -309,10 +312,106 @@ Resources:
           Type: SQS
           Description: "Process SQS jobs states to CW EMF"
           Properties:
-            Queue: !GetAtt QueueJobsStates.Arn
+            Queue: !GetAtt QueueJobsStatesMetrics.Arn
             BatchSize: 1
             MaximumBatchingWindowInSeconds: 5
 
+  # ----- Data Sink for Jobs States when Placed
+
+  JobsStatesExportDeliveryStream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamType: DirectPut
+      ExtendedS3DestinationConfiguration:
+          BucketARN: !GetAtt JobsStatesExportBucket.Arn
+          BufferingHints:
+              IntervalInSeconds: 60
+              SizeInMBs: 50
+          CompressionFormat: UNCOMPRESSED
+          Prefix: batchjobs/
+          RoleARN: !GetAtt JobsStatesExportDeliveryStreamRole.Arn
+
+  JobsStatesExportBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LifecycleConfiguration:
+        Rules:
+        - Id: DeleteAfterInterval
+          Prefix: ''
+          Status: Enabled
+          ExpirationInDays: 7
+
+  JobsStatesExportDeliveryStreamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: firehose.amazonaws.com
+            Action: 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                'sts:ExternalId': !Ref 'AWS::AccountId'
+
+  DeliveryStreamPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      Roles:
+          - !Ref JobsStatesExportDeliveryStreamRole
+      PolicyName: JobsSTatesFirehoseDeliveryPolicy
+      PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action:
+              - 's3:AbortMultipartUpload'
+              - 's3:GetBucketLocation'
+              - 's3:GetObject'
+              - 's3:ListBucket'
+              - 's3:ListBucketMultipartUploads'
+              - 's3:PutObject'
+            Resource:
+              - !GetAtt JobsStatesExportBucket.Arn
+              - !Join
+                  - ''
+                  - - 'arn:aws:s3:::'
+                    - !Ref JobsStatesExportBucket
+                    - '*'
+
+  JobsStatesExportSQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      KmsMasterKeyId: alias/aws/sqs
+      VisibilityTimeout: 12 # 2 more seconds than the lambda timeout
+
+  JobsStatesExportFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/BatchJobsStatesExport
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      ReservedConcurrentExecutions: 10
+      Policies:
+        - FirehoseWritePolicy:
+            DeliveryStreamName: !Ref JobsStatesExportDeliveryStream
+      Timeout: 10
+      MemorySize: 128
+      Environment:
+        Variables:
+          JOBS_STATES_STREAM: !Ref JobsStatesExportDeliveryStream
+      Tags:
+        Application: BatchMetricsDashboards
+      Events:
+        SQSPollJobsStates:
+          Type: SQS
+          Description: "Process SQS jobs states to KinesisFirehose"
+          Properties:
+            Queue: !GetAtt JobsStatesExportSQSQueue.Arn
+            BatchSize: 100
+            MaximumBatchingWindowInSeconds: 5
   # ------------------------------------------------------
 
   # ASG Monitoring Activation ----------------------------
