@@ -480,6 +480,58 @@ Resources:
             SerializationLibrary: org.openx.data.jsonserde.JsonSerDe
 
   # ------------------------------------------------------
+
+  # Sample Athena Queries --------------------------------
+
+  ComputeTimePerInstanceSixHours:
+    Type: AWS::Athena::NamedQuery
+    Properties:
+      Database: !Ref JobsStatesGlueDatabase
+      Description: "Shows the average, min and max runtime per Instance Type over the last 6 hours"
+      Name: "RuntimeStatisticsPerInstance"
+      QueryString:
+                  !Sub
+                    - |-
+                      SELECT
+                        instancetype AS "Instance Type",
+                        split_part(jobdefinition,'/',2) AS "Job Definition",
+                        CAST(avg(date_diff('second', pasteventtime,eventtime)) ASAS BIGINT) AS "Avg",
+                        CAST(max(date_diff('second', pasteventtime,eventtime)) ASAS BIGINT) AS "Max",
+                        CAST(min(date_diff('second', pasteventtime,eventtime)) ASAS BIGINT) AS "Min",
+                        count(*) AS "Count Samples"
+                      FROM "${Database}"."${Table}"
+                      WHERE eventtype LIKE 'SUCCEEDED' AND pasteventtype LIKE 'RUNNING' AND eventtime > current_timestamp - interval '6' hour
+                      GROUP BY instancetype,jobdefinition
+                    - {
+                        Database: !Ref JobsStatesGlueDatabase,
+                        Table: !Ref JobsStatesGlueTable
+                      }
+
+  StartupTimePerInstanceSixHours:
+    Type: AWS::Athena::NamedQuery
+    Properties:
+      Database: !Ref JobsStatesGlueDatabase
+      Description: "Shows the average, min and max runtime per Instance Type over the last 6 hours"
+      Name: "RuntimeStatisticsPerInstance"
+      QueryString:
+                  !Sub
+                    - |-
+                      SELECT
+                        instancetype AS "Instance Type",
+                        split_part(jobdefinition,'/',2) AS "Job Definition",
+                        CAST(avg(date_diff('second', pasteventtime,eventtime)) ASAS BIGINT) AS "Avg",
+                        CAST(max(date_diff('second', pasteventtime,eventtime)) ASAS BIGINT) AS "Max",
+                        CAST(min(date_diff('second', pasteventtime,eventtime)) ASAS BIGINT) AS "Min",
+                        count(*) AS "Count Samples",
+                        eventtime
+                      FROM "${Database}"."${Table}"
+                      WHERE eventtype LIKE 'RUNNING' AND pasteventtype LIKE 'STARTING' AND eventtime > current_timestamp - interval '6' hour
+                      GROUP BY instancetype,jobdefinition
+                    - {
+                        Database: !Ref JobsStatesGlueDatabase,
+                        Table: !Ref JobsStatesGlueTable
+                      }
+
   # ------------------------------------------------------
 
   # ASG Monitoring Activation ----------------------------
