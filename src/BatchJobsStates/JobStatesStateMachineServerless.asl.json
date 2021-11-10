@@ -79,8 +79,19 @@
           "Next": "Get ContainerInstanceId from containerInstanceArn"
         }
       ],
-      "Default": "Get Job State for Instance Association Array"
+      "Default": "Is Attempted?"
     },
+    "Is Attempted?": {
+      "Type": "Choice",
+        "Choices": [
+          {
+            "Variable": "$$.Execution.Input.detail.attempts[-1]",
+            "IsPresent": true,
+            "Next": "Get Job State for Instance Association Array"
+          }
+      ],
+      "Default": "Skip Event"
+    }
     "Get Job State for Instance Association Array": {
       "Type": "Choice",
       "InputPath": "$$.Execution.Input.detail.attempts[-1]",
