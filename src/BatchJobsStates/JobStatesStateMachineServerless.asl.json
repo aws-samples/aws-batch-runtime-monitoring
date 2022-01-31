@@ -83,15 +83,16 @@
     },
     "Is Attempted?": {
       "Type": "Choice",
-        "Choices": [
+      "InputPath": "$$.Execution.Input.detail.attempts[-1]",
+      "Choices": [
           {
-            "Variable": "$$.Execution.Input.detail.attempts[-1]",
+            "Variable": "$",
             "IsPresent": true,
             "Next": "Get Job State for Instance Association Array"
           }
       ],
       "Default": "Skip Event"
-    }
+    },
     "Get Job State for Instance Association Array": {
       "Type": "Choice",
       "InputPath": "$$.Execution.Input.detail.attempts[-1]",
