@@ -1,0 +1,138 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+ Setup for large scale AWS Batch with CEs, JQ, ECR and Job Definition.
+ Author: Pierre-Yves Aquilanti - pierreya@
+
+Parameters:
+  Environment:
+    Type: String
+    Description: Environment name for AWS Batch
+    Default: 'LargeScaleBatch'
+  VPCStackParameter:
+    Type: String
+    Description: Name of the VPC Stack to gater private subnets
+    Default: 'LargeScaleVPC'
+  AMI:
+    Description: Default ECS Optimized AMI or your own AMI ID
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id
+
+##########################
+## Batch Infrastructure ##
+##########################
+Resources:
+  # Configure IAM roles for Batch
+  BatchInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - batch.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole
+  ECSTaskServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+
+  ECSTaskInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref ECSTaskServiceRole
+      InstanceProfileName: !Join [ "", [ "ECSTaskInstanceProfileIAM-", !Ref Environment ] ]
+
+  # Build the AWS Batch CEs
+  ComputeEnvironment1:
+    Type: AWS::Batch::ComputeEnvironment
+    Properties:
+      Type: MANAGED
+      ServiceRole: !Ref BatchInstanceRole
+      ComputeResources:
+        AllocationStrategy: SPOT_CAPACITY_OPTIMIZED
+        MaxvCpus: 100000
+        DesiredvCpus: 0
+        MinvCpus: 0
+        SecurityGroupIds: !Split
+            - ','
+            - Fn::ImportValue: !Sub ${VPCStackParameter}-SecurityGroup
+        Subnets: !Split
+            - ','
+            - Fn::ImportValue: !Sub ${VPCStackParameter}-PrivateSubnets
+        Type: SPOT
+        ImageId: !Ref AMI
+        InstanceRole: !Ref ECSTaskInstanceProfile
+        InstanceTypes:
+          - c5
+          - c4
+          - m5
+          - m4
+      State: ENABLED
+
+  JobQueue1:
+    Type: AWS::Batch::JobQueue
+    Properties:
+      ComputeEnvironmentOrder:
+        - ComputeEnvironment: !Ref ComputeEnvironment1
+          Order: 1
+      Priority: 1
+      State: "ENABLED"
+
+  StressRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: stress-ng
+
+  StressJD:
+    Type: AWS::Batch::JobDefinition
+    Properties:
+      Type: container
+      JobDefinitionName: stress-ng-2-vcpus-3192mb
+      ContainerProperties:
+        Command:
+          - /usr/bin/stress-ng
+          - --cpu
+          - 2
+          - --timeout
+          - 600
+          - --cpu-load
+          - 100
+        Image: !Join ['', [!Ref 'AWS::AccountId','.dkr.ecr.', !Ref 'AWS::Region', '.amazonaws.com/', !Ref StressRepository ] ]
+        Vcpus: 2
+        Memory: 3192
+      PropagateTags: true
+      RetryStrategy:
+        Attempts: 10
+
+Outputs:
+
+  ECRRepository:
+    Description: ECR Repository for the containers
+    Value: !Ref StressRepository
+
+  JobDefinition:
+    Description: Job definition
+    Value: !Ref StressJD
+
+  JobQueue1:
+    Description: Job Queue 1
+    Value: !Ref JobQueue1
