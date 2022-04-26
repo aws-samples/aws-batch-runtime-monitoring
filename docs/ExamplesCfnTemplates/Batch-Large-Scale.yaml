@@ -129,6 +129,10 @@ Outputs:
     Description: ECR Repository for the containers
     Value: !Ref StressRepository
 
+  ECRRepositoryUrl:
+    Description: ECR Repository for the containers
+    Value: !Join ['', [!Ref 'AWS::AccountId','.dkr.ecr.', !Ref 'AWS::Region', '.amazonaws.com/', !Ref StressRepository ] ]
+
   JobDefinition:
     Description: Job definition
     Value: !Ref StressJD
