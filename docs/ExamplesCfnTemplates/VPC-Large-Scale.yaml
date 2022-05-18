@@ -262,22 +262,16 @@ Resources:
     DependsOn: [VpcCidrBlock1]
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: !Select [ 0, !Cidr [ !Select [ 0, !GetAtt VPC.CidrBlockAssociations ], 2, 15 ]]
+      CidrBlock: !Select [ 0, !Cidr [ !FindInMap [Networking, VPC, CIDR1], 2, 15 ]]
       AvailabilityZone: !Select [ 0, !Ref AvailabilityZones]
-      Tags:
-        - Key: Name
-          Value: !Join [ ' ', [ !Ref VPCName, 'Private Subnet 1', !Select [ 0, !Ref AvailabilityZones] ] ]
 
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
     DependsOn: [VpcCidrBlock1]
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: !Select [ 1, !Cidr [ !Select [ 0, !GetAtt VPC.CidrBlockAssociations ], 2, 15 ]]
+      CidrBlock: !Select [ 1, !Cidr [ !FindInMap [Networking, VPC, CIDR1], 2, 15 ]]
       AvailabilityZone: !Select [ 1, !Ref AvailabilityZones]
-      Tags:
-        - Key: Name
-          Value: !Join [ ' ', [ !Ref VPCName, 'Private Subnet 2', !Select [ 1, !Ref AvailabilityZones] ] ]
 
   PrivateSubnet3:
     Condition: 3AZCondition
@@ -285,11 +279,8 @@ Resources:
     DependsOn: [VpcCidrBlock2]
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: !Select [ 0, !Cidr [ !Select [ 1, !GetAtt VPC.CidrBlockAssociations ], 2, 15 ]]
+      CidrBlock: !Select [ 0, !Cidr [ !FindInMap [Networking, VPC, CIDR2], 2, 15 ]]
       AvailabilityZone: !Select [ 2, !Ref AvailabilityZones]
-      Tags:
-        - Key: Name
-          Value: !Join [ ' ', [ !Ref VPCName, 'Private Subnet 3', !Select [ 2, !Ref AvailabilityZones] ] ]
 
   PrivateSubnet4:
     Condition: 4AZCondition
@@ -297,11 +288,8 @@ Resources:
     DependsOn: [VpcCidrBlock2]
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: !Select [ 1, !Cidr [ !Select [ 1, !GetAtt VPC.CidrBlockAssociations ], 2, 15 ]]
+      CidrBlock: !Select [ 1, !Cidr [ !FindInMap [Networking, VPC, CIDR2], 2, 15 ]]
       AvailabilityZone: !Select [ 3, !Ref AvailabilityZones]
-      Tags:
-        - Key: Name
-          Value: !Join [ ' ', [ !Ref VPCName, 'Private Subnet 4', !Select [ 3, !Ref AvailabilityZones] ] ]
 
   PrivateSubnet5:
     Condition: 5AZCondition
@@ -309,11 +297,8 @@ Resources:
     DependsOn: [VpcCidrBlock3]
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: !Select [ 0, !Cidr [ !Select [ 2, !GetAtt VPC.CidrBlockAssociations ], 2, 15 ]]
+      CidrBlock: !Select [ 0, !Cidr [ !FindInMap [Networking, VPC, CIDR3], 2, 15 ]]
       AvailabilityZone: !Select [ 4, !Ref AvailabilityZones]
-      Tags:
-        - Key: Name
-          Value: !Join [ ' ', [ !Ref VPCName, 'Private Subnet 5', !Select [ 4, !Ref AvailabilityZones] ] ]
 
   PrivateSubnet6:
     Condition: 6AZCondition
@@ -321,11 +306,8 @@ Resources:
     DependsOn: [VpcCidrBlock3]
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: !Select [ 1, !Cidr [ !Select [ 2, !GetAtt VPC.CidrBlockAssociations ], 2, 15 ]]
+      CidrBlock: !Select [ 1, !Cidr [ !FindInMap [Networking, VPC, CIDR3], 2, 15 ]]
       AvailabilityZone: !Select [ 5, !Ref AvailabilityZones]
-      Tags:
-        - Key: Name
-          Value: !Join [ ' ', [ !Ref VPCName, 'Private Subnet 6', !Select [ 5, !Ref AvailabilityZones] ] ]
 
   # Create and set the public route table
   PublicRouteTable:
