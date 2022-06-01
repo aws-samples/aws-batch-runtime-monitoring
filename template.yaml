@@ -225,6 +225,7 @@ Resources:
       DefinitionSubstitutions:
         ECSRegistrationTable: !Ref ECSInstancesMetadataTableServerless
         SQSMetricsQueue: !Ref QueueJobsStates
+        SQSSummaryQueue: !Ref QueueJobsSummaries
       Tags:
         Application: BatchMetricsDashboards
       Type: EXPRESS

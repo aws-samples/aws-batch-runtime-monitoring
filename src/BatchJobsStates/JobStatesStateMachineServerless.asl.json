@@ -85,11 +85,11 @@
       "Type": "Choice",
       "InputPath": "$$.Execution.Input.detail.attempts[-1]",
       "Choices": [
-          {
-            "Variable": "$",
-            "IsPresent": true,
-            "Next": "Get Job State for Instance Association Array"
-          }
+        {
+          "Variable": "$",
+          "IsPresent": true,
+          "Next": "Get Job State for Instance Association Array"
+        }
       ],
       "Default": "Skip Event"
     },
@@ -128,12 +128,16 @@
           }
         }
       },
-      "Retry": [ {
-        "ErrorEquals": [ "States.ALL"  ],
-        "IntervalSeconds": 1,
-        "BackoffRate": 2.0,
-        "MaxAttempts": 5
-        } ],
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 1,
+          "BackoffRate": 2,
+          "MaxAttempts": 5
+        }
+      ],
       "ResultPath": "$.ECSInstance",
       "Next": "Check Association ContainerInstanceId to ECS Container Instance"
     },
@@ -165,7 +169,7 @@
             "AvailabilityZone.$": "$.ECSInstance.Item.AvailabilityZone.S",
             "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
             "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
-            "JobDefinition.$":"$.JobDefinition"
+            "JobDefinition.$": "$.JobDefinition"
           },
           "Properties": {
             "JobId.$": "$.JobId",
@@ -176,19 +180,24 @@
             "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
             "InstanceId.$": "$.ECSInstance.Item.InstanceId.S",
             "JobName.$": "$.JobName",
-            "JobDefinition.$":"$.JobDefinition"
+            "JobDefinition.$": "$.JobDefinition"
           },
           "MetricName.$": "$.LastEventType",
           "MetricTime.$": "$.LastEventTime"
         }
       },
-      "Retry": [ {
-        "ErrorEquals": [ "States.ALL"  ],
-        "IntervalSeconds": 1,
-        "BackoffRate": 2.0,
-        "MaxAttempts": 10
-        } ],
-      "End": true
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 1,
+          "BackoffRate": 2,
+          "MaxAttempts": 10
+        }
+      ],
+      "Next": "Is job complete?",
+      "ResultPath": null
     },
     "SQS SendMessage Job State Not Associated": {
       "Type": "Task",
@@ -199,25 +208,79 @@
           "Dimensions": {
             "JobQueue.$": "$.JobQueue",
             "JobState.$": "$.LastEventType",
-            "JobDefinition.$":"$.JobDefinition"
+            "JobDefinition.$": "$.JobDefinition"
           },
           "Properties": {
             "JobId.$": "$.JobId",
             "JobQueue.$": "$.JobQueue",
             "JobState.$": "$.LastEventType",
             "JobName.$": "$.JobName",
-            "JobDefinition.$":"$.JobDefinition"
+            "JobDefinition.$": "$.JobDefinition"
           },
           "MetricName.$": "$.LastEventType",
           "MetricTime.$": "$.LastEventTime"
         }
       },
-      "Retry": [ {
-        "ErrorEquals": [ "States.ALL"  ],
-        "IntervalSeconds": 1,
-        "BackoffRate": 2.0,
-        "MaxAttempts": 10
-        } ],
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 1,
+          "BackoffRate": 2,
+          "MaxAttempts": 10
+        }
+      ],
+      "Next": "Is job complete?",
+      "ResultPath": null
+    },
+    "Is job complete?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Or": [
+            {
+              "Variable": "$.LastEventType",
+              "StringEquals": "SUCCEEDED"
+            },
+            {
+              "Variable": "$.LastEventType",
+              "StringEquals": "FAILED"
+            }
+          ],
+          "Next": "SQS SendMessage Job Summary Statistics"
+        }
+      ],
+      "Default": "Skip Event"
+    },
+    "SQS SendMessage Job Summary Statistics": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage",
+      "Parameters": {
+        "QueueUrl": "${SQSSummaryQueue}",
+        "MessageBody": {
+          "Dimensions": {
+            "JobQueue.$": "$.JobQueue",
+            "JobState.$": "$.LastEventType",
+            "AvailabilityZone.$": "$.ECSInstance.Item.AvailabilityZone.S",
+            "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
+            "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
+            "JobDefinition.$": "$.JobDefinition"
+          },
+          "Properties": {
+            "JobId.$": "$.JobId",
+            "JobQueue.$": "$.JobQueue",
+            "JobState.$": "$.LastEventType",
+            "AvailabilityZone.$": "$.ECSInstance.Item.AvailabilityZone.S",
+            "ECSCluster.$": "$.ECSInstance.Item.ECSCluster.S",
+            "InstanceType.$": "$.ECSInstance.Item.InstanceType.S",
+            "InstanceId.$": "$.ECSInstance.Item.InstanceId.S",
+            "JobName.$": "$.JobName",
+            "JobDefinition.$": "$.JobDefinition"
+          },
+          "detail.$": "$$.Execution.Input.detail"
+        }
+      },
       "End": true
     },
     "Skip Event": {
