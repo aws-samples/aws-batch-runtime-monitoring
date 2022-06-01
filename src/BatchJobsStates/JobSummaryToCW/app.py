@@ -16,6 +16,7 @@
 
 import logging
 import json
+import sched
 from aws_embedded_metrics import metric_scope
 
 logger = logging.getLogger()
@@ -26,7 +27,7 @@ def submit_job_stats(rec, metrics):
     metrics.context.should_use_default_dimensions = False
     metrics.set_namespace("AWSBatchMetrics")
     # summary stats are registered at job stopped time
-    metrics.context.meta["Timestamp"] = rec["stoppedAt"]
+    metrics.context.meta["Timestamp"] = rec["detail"]["stoppedAt"]
     if 'ECSCluster' in rec['Properties']:
         ecs_cluster = rec['Properties']['ECSCluster'].split('/')[-1].split('_Batch')[0]
         rec['Properties']['ECSCluster'] = ecs_cluster
@@ -51,18 +52,15 @@ def submit_job_stats(rec, metrics):
         job_queue = rec['Dimensions']['JobDefinition'].split('/')[-1]
         rec['Dimensions']['JobDefinition'] = job_queue
 
-    metrics.put_metric("WaitTime", 
-        rec["startedAt"]-rec["createdAt"], 
-        "Milliseconds")
-    metrics.put_metric("RunTime", 
-        rec["stoppedAt"]-rec["startedAt"], 
-        "Milliseconds")
-    metrics.put_metric("TotalTime", 
-        rec["stoppedAt"]-rec["createdAt"], 
-        "Milliseconds")
-    metrics.put_metric("SchedulingEfficiency", 
-        (rec["stoppedAt"]-rec["startedAt"])/(rec["stoppedAt"]-rec["createdAt"])*100, 
-        "Percent")
+    waitTime = rec["detail"]["startedAt"]-rec["detail"]["createdAt"]
+    runTime = rec["detail"]["stoppedAt"]-rec["detail"]["startedAt"] 
+    totalTime = rec["detail"]["stoppedAt"]-rec["detail"]["createdAt"] 
+    schedEfficiency = (rec["detail"]["stoppedAt"]-rec["detail"]["startedAt"])/(rec["detail"]["stoppedAt"]-rec["detail"]["createdAt"])*100 
+    metrics.put_metric("WaitTime", waitTime, "Milliseconds")
+    metrics.put_metric("RunTime", runTime, "Milliseconds")
+    metrics.put_metric("TotalTime", totalTime, "Milliseconds")
+    metrics.put_metric("SchedulingEfficiency", schedEfficiency, "Percent")
+    logger.info(f"Wrote WaitTime {waitTime} RunTime {runTime} TotalTime {totalTime} SchedulingEfficiency {schedEfficiency}")
 
 
 def lambda_handler(event, context):
