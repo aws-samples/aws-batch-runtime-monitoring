@@ -212,6 +212,12 @@ Resources:
       KmsMasterKeyId: alias/aws/sqs
       VisibilityTimeout: 12 # 5 more seconds than the lambda timeout
 
+  QueueJobsSummaries:
+    Type: AWS::SQS::Queue
+    Properties:
+      KmsMasterKeyId: alias/aws/sqs
+      VisibilityTimeout: 12
+
   JobStatesStateMachineServerless:
     Type: AWS::Serverless::StateMachine
     Properties:
@@ -272,6 +278,29 @@ Resources:
           Description: "Process SQS jobs states to CW EMF"
           Properties:
             Queue: !GetAtt QueueJobsStates.Arn
+            BatchSize: 1
+            MaximumBatchingWindowInSeconds: 5
+    
+  JobsSummaryMetricToCWFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/BatchJobsStates/JobSummaryToCW
+      Handler: app.lambda_handler 
+      Runtime: python3.9
+      ReservedConcurrentExecutions: 70
+      Policies:
+        - SQSPollerPolicy:
+            QueueName: !GetAtt QueueJobsSummaries.QueueName
+      Timeout: 10
+      MemorySize: 128
+      Tags:
+        Application: BatchMetricsDashboards
+      Events:
+        SQSPollInstanceRegistration:
+          Type: SQS
+          Description: "Process SQS job summaries to CW EMF"
+          Properties:
+            Queue: !GetAtt QueueJobsSummaries.Arn
             BatchSize: 1
             MaximumBatchingWindowInSeconds: 5
 
