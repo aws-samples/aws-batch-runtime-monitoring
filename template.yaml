@@ -829,6 +829,570 @@ Resources:
   # Batch job states dashboards
   # ------------------------------------------------------
 
+  BatchMetricsJobsSummary:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: Batch-Scheduling-Efficiency
+      DashboardBody: 
+        !Sub
+          - |-
+            {
+              "widgets": [
+                {
+                  "height": 6,
+                  "width": 18,
+                  "y": 6,
+                  "x": 6,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        "AWSBatchMetrics",
+                        "WaitTime",
+                        "JobState",
+                        "SUCCEEDED",
+                        {
+                          "label": "[avg: ${!AVG}] WaitTime",
+                          "region": "${DeployedRegion}"
+                        }
+                      ],
+                      [
+                        "AWSBatchMetrics",
+                        "RunTime",
+                        "JobState",
+                        "SUCCEEDED",
+                        {
+                          "label": "[avg: ${!AVG}] RunTime",
+                          "region": "${DeployedRegion}"
+                        }
+                      ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": true,
+                    "region": "${DeployedRegion}",
+                    "stat": "Average",
+                    "period": 30,
+                    "title": "Wait+Run Time (30s avg, all successful jobs)",
+                    "yAxis": {
+                      "left": {
+                        "label": "",
+                        "showUnits": true
+                      },
+                      "right": {
+                        "showUnits": false
+                      }
+                    }
+                  }
+                },
+                {
+                  "height": 6,
+                  "width": 6,
+                  "y": 24,
+                  "x": 6,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        {
+                          "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"RunTime\"', 'Average', 30)",
+                          "id": "e1",
+                          "region": "${DeployedRegion}"
+                        }
+                      ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": false,
+                    "region": "${DeployedRegion}",
+                    "stat": "Average",
+                    "period": 300,
+                    "title": "Run Time by Job Definition",
+                    "yAxis": {
+                      "left": {
+                        "label": "Milliseconds",
+                        "showUnits": false
+                      },
+                      "right": {
+                        "showUnits": false
+                      }
+                    }
+                  }
+                },
+                {
+                  "height": 6,
+                  "width": 6,
+                  "y": 18,
+                  "x": 6,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        {
+                          "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"WaitTime\"', 'Average', 30)",
+                          "id": "e1",
+                          "region": "${DeployedRegion}"
+                        }
+                      ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": false,
+                    "region": "${DeployedRegion}",
+                    "stat": "Average",
+                    "period": 300,
+                    "title": "Wait Time by Job Definition",
+                    "yAxis": {
+                      "left": {
+                        "label": "Milliseconds",
+                        "showUnits": false
+                      },
+                      "right": {
+                        "showUnits": false
+                      }
+                    }
+                  }
+                },
+                {
+                  "height": 6,
+                  "width": 6,
+                  "y": 12,
+                  "x": 6,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        {
+                          "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"SchedulingEfficiency\"', 'Average', 30)",
+                          "id": "e1",
+                          "region": "${DeployedRegion}"
+                        }
+                      ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": false,
+                    "region": "${DeployedRegion}",
+                    "stat": "Average",
+                    "yAxis": {
+                      "left": {
+                        "min": 0,
+                        "max": 100,
+                        "showUnits": false,
+                        "label": "%"
+                      },
+                      "right": {
+                        "showUnits": false
+                      }
+                    },
+                    "title": "Scheduling Efficiency by Job Definition",
+                    "period": 300
+                  }
+                },
+                {
+                  "height": 6,
+                  "width": 6,
+                  "y": 6,
+                  "x": 0,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        "AWSBatchMetrics",
+                        "WaitTime",
+                        "JobState",
+                        "SUCCEEDED"
+                      ],
+                      [
+                        ".",
+                        "RunTime",
+                        ".",
+                        "."
+                      ]
+                    ],
+                    "view": "pie",
+                    "region": "${DeployedRegion}",
+                    "stat": "Average",
+                    "period": 3600,
+                    "title": "Wait Time vs Run Time (period avg)",
+                    "labels": {
+                      "visible": false
+                    },
+                    "setPeriodToTimeRange": true,
+                    "sparkline": false,
+                    "legend": {
+                      "position": "bottom"
+                    }
+                  }
+                },
+                {
+                  "height": 6,
+                  "width": 6,
+                  "y": 0,
+                  "x": 0,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        "AWSBatchMetrics",
+                        "SchedulingEfficiency",
+                        "JobState",
+                        "SUCCEEDED"
+                      ]
+                    ],
+                    "view": "gauge",
+                    "region": "${DeployedRegion}",
+                    "yAxis": {
+                      "left": {
+                        "min": 0,
+                        "max": 100
+                      }
+                    },
+                    "setPeriodToTimeRange": false,
+                    "sparkline": true,
+                    "title": "Scheduling Efficiency (period avg)",
+                    "period": 3600,
+                    "legend": {
+                      "position": "hidden"
+                    },
+                    "stat": "Average"
+                  }
+                },
+                {
+                  "height": 6,
+                  "width": 18,
+                  "y": 0,
+                  "x": 6,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        "AWSBatchMetrics",
+                        "SchedulingEfficiency",
+                        "JobState",
+                        "SUCCEEDED"
+                      ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": true,
+                    "region": "${DeployedRegion}",
+                    "stat": "Average",
+                    "period": 30,
+                    "yAxis": {
+                      "left": {
+                        "label": "%",
+                        "showUnits": false
+                      },
+                      "right": {
+                        "showUnits": false
+                      }
+                    },
+                    "legend": {
+                      "position": "hidden"
+                    },
+                    "title": "Scheduling Efficiency (30s avg, all successful jobs)"
+                  }
+                },
+                {
+                  "height": 6,
+                  "width": 6,
+                  "y": 12,
+                  "x": 12,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        {
+                          "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"SchedulingEfficiency\"', 'Average', 30)",
+                          "id": "e1",
+                          "region": "${DeployedRegion}"
+                        }
+                      ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": false,
+                    "region": "${DeployedRegion}",
+                    "title": "Scheduling Efficiency by Instance Type",
+                    "stat": "Average",
+                    "period": 300,
+                    "yAxis": {
+                      "left": {
+                        "label": "%",
+                        "showUnits": false,
+                        "min": 0,
+                        "max": 100
+                      },
+                      "right": {
+                        "showUnits": false
+                      }
+                    }
+                  }
+                },
+                {
+                  "height": 6,
+                  "width": 6,
+                  "y": 12,
+                  "x": 0,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        {
+                          "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"SchedulingEfficiency\"', 'Average', 30)",
+                          "id": "e1",
+                          "region": "${DeployedRegion}"
+                        }
+                      ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": false,
+                    "region": "${DeployedRegion}",
+                    "title": "Scheduling Efficiency by Job Queue",
+                    "stat": "Average",
+                    "period": 300,
+                    "yAxis": {
+                      "left": {
+                        "showUnits": false,
+                        "label": "%"
+                      }
+                    }
+                  }
+                },
+                {
+                  "height": 6,
+                  "width": 6,
+                  "y": 12,
+                  "x": 18,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        {
+                          "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"SchedulingEfficiency\"', 'Average', 30)",
+                          "id": "e1",
+                          "region": "${DeployedRegion}"
+                        }
+                      ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": false,
+                    "region": "${DeployedRegion}",
+                    "title": "Scheduling Efficiency by Availability Zone",
+                    "stat": "Average",
+                    "period": 300,
+                    "yAxis": {
+                      "left": {
+                        "label": "%",
+                        "min": 0,
+                        "max": 100,
+                        "showUnits": false
+                      },
+                      "right": {
+                        "showUnits": false
+                      }
+                    }
+                  }
+                },
+                {
+                  "height": 6,
+                  "width": 6,
+                  "y": 18,
+                  "x": 0,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        {
+                          "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"WaitTime\"', 'Average', 30)",
+                          "id": "e1",
+                          "region": "${DeployedRegion}"
+                        }
+                      ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": false,
+                    "region": "${DeployedRegion}",
+                    "stat": "Average",
+                    "period": 300,
+                    "title": "Wait Time by Job Queue",
+                    "yAxis": {
+                      "left": {
+                        "label": "Milliseconds",
+                        "showUnits": false
+                      },
+                      "right": {
+                        "showUnits": false
+                      }
+                    }
+                  }
+                },
+                {
+                  "height": 6,
+                  "width": 6,
+                  "y": 18,
+                  "x": 12,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        {
+                          "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"WaitTime\"', 'Average', 30)",
+                          "id": "e1",
+                          "region": "${DeployedRegion}"
+                        }
+                      ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": false,
+                    "region": "${DeployedRegion}",
+                    "stat": "Average",
+                    "period": 300,
+                    "title": "Wait Time by Instance Type",
+                    "yAxis": {
+                      "left": {
+                        "label": "Milliseconds",
+                        "showUnits": false
+                      },
+                      "right": {
+                        "showUnits": false
+                      }
+                    }
+                  }
+                },
+                {
+                  "height": 6,
+                  "width": 6,
+                  "y": 18,
+                  "x": 18,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        {
+                          "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"WaitTime\"', 'Average', 30)",
+                          "id": "e1",
+                          "region": "${DeployedRegion}"
+                        }
+                      ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": false,
+                    "region": "${DeployedRegion}",
+                    "stat": "Average",
+                    "period": 300,
+                    "title": "Wait Time by Availability Zone",
+                    "yAxis": {
+                      "left": {
+                        "label": "Milliseconds",
+                        "showUnits": false
+                      },
+                      "right": {
+                        "showUnits": false
+                      }
+                    }
+                  }
+                },
+                {
+                  "height": 6,
+                  "width": 6,
+                  "y": 24,
+                  "x": 0,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        {
+                          "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"RunTime\"', 'Average', 30)",
+                          "id": "e1",
+                          "region": "${DeployedRegion}"
+                        }
+                      ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": false,
+                    "region": "${DeployedRegion}",
+                    "stat": "Average",
+                    "period": 300,
+                    "title": "Run Time by Job Queue",
+                    "yAxis": {
+                      "left": {
+                        "label": "Milliseconds",
+                        "showUnits": false
+                      },
+                      "right": {
+                        "showUnits": false
+                      }
+                    }
+                  }
+                },
+                {
+                  "height": 6,
+                  "width": 6,
+                  "y": 24,
+                  "x": 12,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        {
+                          "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"RunTime\"', 'Average', 30)",
+                          "id": "e1",
+                          "region": "${DeployedRegion}"
+                        }
+                      ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": false,
+                    "region": "${DeployedRegion}",
+                    "stat": "Average",
+                    "period": 300,
+                    "title": "Run Time by Instance Type",
+                    "yAxis": {
+                      "left": {
+                        "label": "Milliseconds",
+                        "showUnits": false
+                      },
+                      "right": {
+                        "showUnits": false
+                      }
+                    }
+                  }
+                },
+                {
+                  "height": 6,
+                  "width": 6,
+                  "y": 24,
+                  "x": 18,
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      [
+                        {
+                          "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"RunTime\"', 'Average', 30)",
+                          "id": "e1",
+                          "region": "${DeployedRegion}"
+                        }
+                      ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": false,
+                    "region": "${DeployedRegion}",
+                    "stat": "Average",
+                    "period": 300,
+                    "title": "Run Time by Availability Zone",
+                    "yAxis": {
+                      "left": {
+                        "label": "Milliseconds",
+                        "showUnits": false
+                      },
+                      "right": {
+                        "showUnits": false
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          - {
+              DeployedRegion: !Ref "AWS::Region",
+            }
+            
   BatchMetricsJobsStates:
     Type: AWS::CloudWatch::Dashboard
     Properties:
