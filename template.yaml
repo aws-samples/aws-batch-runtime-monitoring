@@ -244,6 +244,8 @@ Resources:
       Policies:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt QueueJobsStates.QueueName
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt QueueJobsSummaries.QueueName
         - DynamoDBReadPolicy:
             TableName: !Ref ECSInstancesMetadataTableServerless
         - CloudWatchLogsFullAccess
