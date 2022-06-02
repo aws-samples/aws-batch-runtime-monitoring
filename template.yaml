@@ -832,7 +832,7 @@ Resources:
   BatchMetricsJobsSummary:
     Type: AWS::CloudWatch::Dashboard
     Properties:
-      DashboardName: Batch-Scheduling-Efficiency
+      DashboardName: Batch-Jobs-Scheduling
       DashboardBody: 
         !Sub
           - |-
@@ -872,11 +872,11 @@ Resources:
                     "region": "${DeployedRegion}",
                     "stat": "Average",
                     "period": 30,
-                    "title": "Wait+Run Time (30s avg, all successful jobs)",
+                    "title": "Wait+Run Time (all jobs)",
                     "yAxis": {
                       "left": {
-                        "label": "",
-                        "showUnits": true
+                        "label": "Milliseconds",
+                        "showUnits": false
                       },
                       "right": {
                         "showUnits": false
@@ -1010,6 +1010,7 @@ Resources:
                     "region": "${DeployedRegion}",
                     "stat": "Average",
                     "period": 3600,
+                    "setPeriodToTimeRange": true,
                     "title": "Wait Time vs Run Time (period avg)",
                     "labels": {
                       "visible": false
@@ -1047,6 +1048,7 @@ Resources:
                     "setPeriodToTimeRange": false,
                     "sparkline": true,
                     "title": "Scheduling Efficiency (period avg)",
+                    "setPeriodToTimeRange": true,
                     "period": 3600,
                     "legend": {
                       "position": "hidden"
@@ -1077,6 +1079,8 @@ Resources:
                     "yAxis": {
                       "left": {
                         "label": "%",
+                        "min": 0,
+                        "max": 100,
                         "showUnits": false
                       },
                       "right": {
@@ -1086,7 +1090,7 @@ Resources:
                     "legend": {
                       "position": "hidden"
                     },
-                    "title": "Scheduling Efficiency (30s avg, all successful jobs)"
+                    "title": "Scheduling Efficiency (all jobs)"
                   }
                 },
                 {
@@ -1149,7 +1153,9 @@ Resources:
                     "yAxis": {
                       "left": {
                         "showUnits": false,
-                        "label": "%"
+                        "label": "%",
+                        "min": 0,
+                        "max": 100
                       }
                     }
                   }
