@@ -108,7 +108,7 @@ Resources:
     Properties:
       CodeUri: src/ECSInstancesRegistration/MetricToCW
       Handler: app.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.9
       ReservedConcurrentExecutions: 30
       Policies:
         - SQSPollerPolicy:
@@ -185,7 +185,7 @@ Resources:
     Properties:
       CodeUri: src/ECSRunTask/RunTaskToCW
       Handler: app.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.9
       ReservedConcurrentExecutions: 30
       Policies:
         - SQSPollerPolicy:
@@ -257,7 +257,7 @@ Resources:
     Properties:
       CodeUri: src/BatchJobsStates/JobStatesToCW
       Handler: app.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.9
       ReservedConcurrentExecutions: 70
       Policies:
         - SQSPollerPolicy:
@@ -315,7 +315,7 @@ Resources:
       CodeUri: src/ASGMonitoring
       Handler: app.lambda_handler
       Role: !GetAtt ASGMonitoringFunctionRole.Arn
-      Runtime: python3.8
+      Runtime: python3.9
       Timeout: 60
       MemorySize: 128
       ReservedConcurrentExecutions: 1
