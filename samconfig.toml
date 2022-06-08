@@ -1,0 +1,10 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "aws-batch-metrics"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-15sh4i0bj0yfx"
+s3_prefix = "aws-batch-metrics"
+region = "eu-west-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
