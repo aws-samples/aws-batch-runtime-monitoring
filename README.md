@@ -45,6 +45,92 @@ When creating the stack for the first time you will need to provide the followin
 
 - **Stack Name**: name of the CloudFormation stack that will be deployed.
 - **AWS Region**: region in which you will deploy the stack, the default region will be used if nothing is provided.
+- **CreateTrail**: this parameter enables the creation of an AWS CloudTrail trail in your account. Two possible settings are available for this parameter. Select:
+    - `yes`: if you want to create a new AWS CloudTrail trail;
+    - `no`: if you want to proceed without the AWS CloudTrail trail creation.
+    
+    To work properly, the tool needs *at least* one AWS CloudTrail trail with the following characteristics in your AWS Account:
+    - trail logging must be on;
+    - it must record "Management Events";
+    - API Activity must be set both to *read* and *write*;
+    - it must be a multi-region trail or deployed in the same AWS Region of the tool.
+    
+    If you already have a trail with the above-mentioned characteristics, you can avoid deploying another trail; thus, you can set the CreateTrail parameter to `no`.
+    If not, or if you are not sure, set the parameter to `yes`.
+
+    You can check if you already have deployed an AWS CloudTrail trail which fits all the requirements of the tool through the AWS Console by selecting: 
+    - AWS CloudTrail page;
+    - Trails;
+    - in this section, you can find your AWS account's trails. Thus for moving into the next step, you are looking for a trail which the status is "logging" and has multi-region enabled *or* that is deployed in the same region as the tool;
+    - by clicking the trail name you can find the "Management events" panel that contains the "API activity" field. To match the requirements the "Management events" panel must be active and the "API activity" field must be equal to "All".
+
+    Or, if you preferer, with the AWS CLI:
+    - list all your tails and check the multi-region parameter or the AWS region of deployment. For moving into the next steps, you are looking for a trail that has multi-region enabled *or* that is deployed in the same region as the tool;
+      ```bash
+      aws cloudtrail describe-trails # provides you the list of all the trails in your account with information about ARN, region and multi-region deployement
+      ```
+      example of output with one trail:
+      ```json
+      {
+      "trailList": [
+          {
+              "Name": "YOUR_TRAIL_NAME",
+              "IsMultiRegionTrail": "MULTI-REGION_boolean",
+              "HomeRegion": "YOUR_TRAIL_REGION",
+              "TrailARN": "YOUR_TRAIL_ARN",
+              "_comment": "And many other attributes"
+          }
+      ]
+      }
+      ```
+    - check if the trail is logging the events. For moving into the next step it must be `true`;
+      ```bash
+      aws cloudtrail get-trail-status --name YOUR_TRAIL_ARN # provides you the status of the trail. Here we can check the logging status
+      ```
+      example of output:
+      ```json
+      {
+          "IsLogging": "LOGGIN_STATUS_boolean",
+          "_comment": "And many other attributes"
+      }
+      ```
+    - check which events the trail is recording. We look for a trail which records read and write "API Activity" of "Management events": 
+      ```bash
+      aws cloudtrail get-event-selectors --trail-name YOUR_TRAIL_ARN # provides you the details about the trail Event Selector
+      ```
+      example of two trails - more than one syntax is possible - with "Management events" enabled, more about [Event Selector](https://docs.aws.amazon.com/awscloudtrail/latest/APIReference/API_EventSelector.html):
+      ```json
+      {
+          "TrailARN": "YOUR_TRAIL_ARN",
+          "AdvancedEventSelectors": [
+              {
+                  "Name": "Management events selector",
+                  "FieldSelectors": [
+                      {
+                          "Field": "eventCategory",
+                          "Equals": [
+                              "Management"
+                          ]
+                      }
+                  ]
+              }
+          ]
+      }
+      -------------------------------------------------
+      {
+      "TrailARN": "YOUR_TRAIL_ARN",
+      "EventSelectors": [
+          {
+              "ReadWriteType": "All",
+              "IncludeManagementEvents": true,
+              "DataResources": [],
+              "ExcludeManagementEventSources": []
+          }
+      ]
+      }
+      ```
+
+    
 
 After the first launch, you can modify the function and deploy a new version with the same parameters through the following commands:
 
@@ -56,7 +142,17 @@ sam deploy # use sam deploy --no-confirm-changeset to force the deployment witho
 Cleanup
 ---
 
-To remove the SAM application, go to the CloudFormation page of the AWS Console, select your stack and click **Delete**.
+If you didn't set SAM's CreateTrail parameter to `yes` *skip* the following step: 
+- AWS Console:
+  - go to the Amazon Simple Storage Service page;
+  - look for a bucket called `STACK_NAME-s3cloudtrailbucket-([a-zA-Z0-9_-])*`, for example: `My-Monitoring-Stack-s3cloudtrailbucket-1k2hb0mebxnix`;
+  - open that bucket and empty it.
+- AWS CLI: 
+  - run `aws s3 ls` to list all the S3 bucket of your account;
+  - look for a bucket called `STACK_NAME-s3cloudtrailbucket-([a-zA-Z0-9_-])*`, for example: `My-Monitoring-Stack-s3cloudtrailbucket-1k2hb0mebxnix`;
+  - run `aws s3 rm s3://BUCKET_NAME --recursive` to empy the bucket.
+
+Now, to remove the SAM application, go to the CloudFormation page of the AWS Console, select your stack and click **Delete** or execute the following AWS CLI command: `aws cloudformation delete-stack --stack-name STACK_NAME --region AWS_REGION`.
 
 Adding Monitoring to Existing Auto-Scaling Groups
 ---
