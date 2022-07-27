@@ -834,7 +834,7 @@ Resources:
   BatchMetricsJobsSummary:
     Type: AWS::CloudWatch::Dashboard
     Properties:
-      DashboardName: Batch-Jobs-Scheduling
+      DashboardName: Batch-Jobs-Timings
       DashboardBody: 
         !Sub
           - |-
@@ -962,7 +962,7 @@ Resources:
                     "metrics": [
                       [
                         {
-                          "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"SchedulingEfficiency\"', 'Average', 30)",
+                          "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"WaitTimeTotalTime\"', 'Average', 30)",
                           "id": "e1",
                           "region": "${DeployedRegion}"
                         }
@@ -983,7 +983,7 @@ Resources:
                         "showUnits": false
                       }
                     },
-                    "title": "Scheduling Efficiency by Job Definition",
+                    "title": "RunTime/TotalTime by Job Definition",
                     "period": 300
                   }
                 },
@@ -1034,7 +1034,7 @@ Resources:
                     "metrics": [
                       [
                         "AWSBatchMetrics",
-                        "SchedulingEfficiency",
+                        "WaitTimeTotalTime",
                         "JobState",
                         "SUCCEEDED"
                       ]
@@ -1049,7 +1049,7 @@ Resources:
                     },
                     "setPeriodToTimeRange": false,
                     "sparkline": true,
-                    "title": "Scheduling Efficiency (period avg)",
+                    "title": "WaitTime/TotalTime (period avg)",
                     "setPeriodToTimeRange": true,
                     "period": 3600,
                     "legend": {
@@ -1068,7 +1068,7 @@ Resources:
                     "metrics": [
                       [
                         "AWSBatchMetrics",
-                        "SchedulingEfficiency",
+                        "WaitTimeTotalTime",
                         "JobState",
                         "SUCCEEDED"
                       ]
@@ -1092,7 +1092,7 @@ Resources:
                     "legend": {
                       "position": "hidden"
                     },
-                    "title": "Scheduling Efficiency (all jobs)"
+                    "title": "WaitTime/TotalTime (all jobs)"
                   }
                 },
                 {
@@ -1105,7 +1105,7 @@ Resources:
                     "metrics": [
                       [
                         {
-                          "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"SchedulingEfficiency\"', 'Average', 30)",
+                          "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"WaitTimeTotalTime\"', 'Average', 30)",
                           "id": "e1",
                           "region": "${DeployedRegion}"
                         }
@@ -1114,7 +1114,7 @@ Resources:
                     "view": "timeSeries",
                     "stacked": false,
                     "region": "${DeployedRegion}",
-                    "title": "Scheduling Efficiency by Instance Type",
+                    "title": "WaitTime/TotalTime by Instance Type",
                     "stat": "Average",
                     "period": 300,
                     "yAxis": {
@@ -1140,7 +1140,7 @@ Resources:
                     "metrics": [
                       [
                         {
-                          "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"SchedulingEfficiency\"', 'Average', 30)",
+                          "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"WaitTimeTotalTime\"', 'Average', 30)",
                           "id": "e1",
                           "region": "${DeployedRegion}"
                         }
@@ -1149,7 +1149,7 @@ Resources:
                     "view": "timeSeries",
                     "stacked": false,
                     "region": "${DeployedRegion}",
-                    "title": "Scheduling Efficiency by Job Queue",
+                    "title": "WaitTime/TotalTime by Job Queue",
                     "stat": "Average",
                     "period": 300,
                     "yAxis": {
@@ -1172,7 +1172,7 @@ Resources:
                     "metrics": [
                       [
                         {
-                          "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"SchedulingEfficiency\"', 'Average', 30)",
+                          "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"WaitTimeTotalTime\"', 'Average', 30)",
                           "id": "e1",
                           "region": "${DeployedRegion}"
                         }
@@ -1181,7 +1181,7 @@ Resources:
                     "view": "timeSeries",
                     "stacked": false,
                     "region": "${DeployedRegion}",
-                    "title": "Scheduling Efficiency by Availability Zone",
+                    "title": "WaitTime/TotalTime by Availability Zone",
                     "stat": "Average",
                     "period": 300,
                     "yAxis": {

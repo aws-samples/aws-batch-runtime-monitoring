@@ -55,16 +55,16 @@ def submit_job_stats(rec, metrics):
     waitTime = rec["detail"]["startedAt"]-rec["detail"]["createdAt"]
     runTime = rec["detail"]["stoppedAt"]-rec["detail"]["startedAt"] 
     totalTime = rec["detail"]["stoppedAt"]-rec["detail"]["createdAt"] 
-    schedEfficiency = (rec["detail"]["stoppedAt"]-rec["detail"]["startedAt"])/(rec["detail"]["stoppedAt"]-rec["detail"]["createdAt"])*100 
+    waitTimeTotalTime = (rec["detail"]["stoppedAt"]-rec["detail"]["startedAt"])/(rec["detail"]["stoppedAt"]-rec["detail"]["createdAt"])*100 
     for k, v in rec['Dimensions'].items():
         metrics.put_dimensions({k:v})
     metrics.put_metric("WaitTime", waitTime, "Milliseconds")
     metrics.put_metric("RunTime", runTime, "Milliseconds")
     metrics.put_metric("TotalTime", totalTime, "Milliseconds")
-    metrics.put_metric("SchedulingEfficiency", schedEfficiency, "Percent")
+    metrics.put_metric("WaitTimeTotalTime", waitTimeTotalTime, "Percent")
     for k, v in rec['Properties'].items():
         metrics.set_property(k, v)
-    logger.info(f"Wrote WaitTime {waitTime} RunTime {runTime} TotalTime {totalTime} SchedulingEfficiency {schedEfficiency}")
+    logger.info(f"Wrote WaitTime {waitTime} RunTime {runTime} TotalTime {totalTime} WaitTimeTotalTime {waitTimeTotalTime}")
 
 
 def lambda_handler(event, context):
