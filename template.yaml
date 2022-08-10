@@ -340,7 +340,7 @@ Resources:
   BatchMetricsECSInstancesRegistration:
     Type: AWS::CloudWatch::Dashboard
     Properties:
-      DashboardName: Batch-ECS-InstancesRegistration
+      DashboardName: !Join [ '-', [ !Ref AWS::Region, Batch-ECS-InstancesRegistration ] ]
       DashboardBody:
         !Sub
           - |-
@@ -522,7 +522,7 @@ Resources:
   BatchMetricsJobsPlacement:
     Type: AWS::CloudWatch::Dashboard
     Properties:
-      DashboardName: Batch-Jobs-Placement
+      DashboardName: !Join [ '-', [ !Ref AWS::Region, Batch-Jobs-Placement ] ]
       DashboardBody:
         !Sub
           - |-
@@ -802,7 +802,7 @@ Resources:
   BatchMetricsJobsStates:
     Type: AWS::CloudWatch::Dashboard
     Properties:
-      DashboardName: Batch-Jobs-States
+      DashboardName: !Join [ '-', [ !Ref AWS::Region, Batch-Jobs-States ] ]
       DashboardBody:
         !Sub
           - |-
@@ -1393,7 +1393,7 @@ Resources:
   ECSClusterUtilization:
     Type: AWS::CloudWatch::Dashboard
     Properties:
-      DashboardName: Batch-EC2-Capacity
+      DashboardName: !Join [ '-', [ !Ref AWS::Region, Batch-EC2-Capacity ] ]
       DashboardBody:
         !Sub
           - |-
@@ -1612,7 +1612,7 @@ Resources:
   AutoScalingGroupUtilization:
     Type: AWS::CloudWatch::Dashboard
     Properties:
-      DashboardName: Batch-ASG-Utilization
+      DashboardName: !Join [ '-', [ !Ref AWS::Region, Batch-ASG-Utilization ] ]
       DashboardBody:
         !Sub
           - |-
