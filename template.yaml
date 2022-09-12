@@ -834,7 +834,7 @@ Resources:
   BatchMetricsJobsSummary:
     Type: AWS::CloudWatch::Dashboard
     Properties:
-      DashboardName: Batch-Jobs-Timings
+      DashboardName: !Join [ '-', [ !Ref AWS::Region, Batch-Jobs-Timings ] ]
       DashboardBody: 
         !Sub
           - |-
