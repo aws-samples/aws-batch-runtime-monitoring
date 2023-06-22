@@ -26,10 +26,8 @@
             "Parameters": {
                 "Region.$": "$.detail.awsRegion",
                 "LastEventTime.$": "$.detail.eventTime",
-                "JobId.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name=='AWS_BATCH_JOB_ID')].value",
-                "CEName.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name=='AWS_BATCH_CE_NAME')].value",
-                "JQName.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name=='AWS_BATCH_JQ_NAME')].value",
-                "JobAttempt.$": "$.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name=='AWS_BATCH_JOB_ATTEMPT')].value",
+                "CEName.$": "$.detail.requestParameters.tags[?(@.key=='aws:batch:compute-environment')].value",
+                "JQName.$": "$.detail.requestParameters.tags[?(@.key=='aws:batch:job-queue')].value",
                 "ECSCluster.$": "$.detail.requestParameters.cluster"
             }
         },
@@ -46,7 +44,6 @@
                         "ComputeEnvironment.$": "$.CEName[0]"
                     },
                     "Properties": {
-                        "JobId.$": "$.JobId[0]",
                         "ECSCluster.$": "$.ECSCluster",
                         "JobQueue.$": "$.JQName[0]",
                         "ComputeEnvironment.$": "$.CEName[0]"
@@ -61,125 +58,7 @@
                 "BackoffRate": 2.0,
                 "MaxAttempts": 10
             }],
-            "Next": "Is Array Job?"
-        },
-        "Is Array Job?": {
-            "Type": "Choice",
-            "Choices": [{
-                "Variable": "$$.Execution.Input.detail.requestParameters.overrides.containerOverrides[0].environment[4]",
-                 "IsPresent": true,
-                "Next": "Yes, add job index"
-            }],
-            "Default": "Is task placed onto an instance?"
-        },
-        "Yes, add job index": {
-            "Type": "Pass",
-            "InputPath": "$$.Execution.Input.detail.requestParameters.overrides.containerOverrides[0].environment[?(@.name=='AWS_BATCH_JOB_ARRAY_INDEX')].value",
-            "ResultPath": "$.JobArrayIndex",
-            "Next": "Is task placed onto an instance?"
-        },
-        "Is task placed onto an instance?": {
-            "Type": "Choice",
-            "Choices": [{
-                "And": [{
-                    "Variable": "$$.Execution.Input.detail.responseElements",
-                    "IsPresent": true
-                }, {
-                    "Variable": "$$.Execution.Input.detail.responseElements.tasks[0]",
-                    "IsPresent": true
-                }, {
-                    "Not": {
-                        "Variable": "$$.Execution.Input.detail.responseElements.failures[0]",
-                        "IsPresent": true
-                    }
-                }],
-                "Next": "Job is placed AvailabilityZone"
-            }],
-            "Default": "Job Not Placed, Skipping"
-        },
-        "Job is placed AvailabilityZone": {
-            "Type": "Pass",
-            "InputPath": "$$.Execution.Input.detail.responseElements.tasks[0].availabilityZone",
-            "ResultPath": "$.AvailabilityZone",
-            "Next": "Job is placed ContainerInstanceId"
-        },
-        "Job is placed ContainerInstanceId": {
-            "Type": "Pass",
-            "InputPath": "$$.Execution.Input.detail.responseElements.tasks[0].containerInstanceArn",
-            "ResultPath": "$.ContainerInstanceId",
-            "Next": "DynamoDB GetItem Instance"
-        },
-        "DynamoDB GetItem Instance": {
-            "Type": "Task",
-            "Resource": "arn:aws:states:::dynamodb:getItem",
-            "Parameters": {
-                "TableName": "${ECSRegistrationTable}",
-                "Key": {
-                    "ContainerInstanceId": {
-                        "S.$": "$.ContainerInstanceId"
-                    }
-                },
-                "ProjectionExpression": "InstanceType,InstanceId",
-                "ConsistentRead": true
-            },
-            "Retry": [{
-                "ErrorEquals": ["States.ALL"],
-                "IntervalSeconds": 1,
-                "BackoffRate": 2.0,
-                "MaxAttempts": 5
-            }],
-            "ResultPath": "$.InstanceProperties",
-            "Next": "Did we get the instance?"
-        },
-        "Did we get the instance?": {
-            "Type": "Choice",
-            "Choices": [{
-                "Not": {
-                    "Variable": "$.InstanceProperties.Item",
-                    "IsPresent": true
-                },
-                "Next": "Retry Get Item with Delay"
-            }],
-            "Default": "SQS SendMessage Placed"
-        },
-        "Retry Get Item with Delay": {
-            "Type": "Wait",
-            "Seconds": 3,
-            "Next": "DynamoDB GetItem Instance"
-        },
-        "SQS SendMessage Placed": {
-            "Type": "Task",
-            "Resource": "arn:aws:states:::sqs:sendMessage",
-            "Parameters": {
-                "QueueUrl": "${SQSMetricsQueue}",
-                "MessageBody": {
-                    "Dimensions": {
-                        "JobQueue.$": "$.JQName[0]",
-                        "ECSCluster.$": "$.ECSCluster",
-                        "ComputeEnvironment.$": "$.CEName[0]",
-                        "AvailabilityZone.$": "$.AvailabilityZone",
-                        "InstanceType.$": "$.InstanceProperties.Item.InstanceType.S"
-                    },
-                    "Properties": {
-                        "JobId.$": "$.JobId",
-                        "InstanceId.$": "$.InstanceProperties.Item.InstanceId.S",
-                        "ECSCluster.$": "$.ECSCluster",
-                        "JobQueue.$": "$.JQName[0]",
-                        "ComputeEnvironment.$": "$.CEName[0]",
-                        "AvailabilityZone.$": "$.AvailabilityZone",
-                        "InstanceType.$": "$.InstanceProperties.Item.InstanceType.S"
-                    },
-                    "MetricName": "Jobs Placed",
-                    "MetricTime.$": "$.LastEventTime"
-                }
-            },
-            "Retry": [{
-                "ErrorEquals": ["States.ALL"],
-                "IntervalSeconds": 1,
-                "BackoffRate": 2.0,
-                "MaxAttempts": 10
-            }],
-            "End": true
+            "Next": "Job Not Placed, Skipping"
         },
         "Job Not Placed, Skipping": {
             "Type": "Pass",

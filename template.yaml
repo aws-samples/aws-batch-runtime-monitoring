@@ -18,7 +18,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Collect metrics from AWS Batch, ECS and EC2 and display them in ClouWatch
+  Collect metrics from AWS Batch, ECS and EC2 and display them in CloudWatch
 
 Resources:
   # DynamoDB Tables --------------------------------------
@@ -150,7 +150,7 @@ Resources:
       Events:
         ECSCloudTrail:
           Type: CloudWatchEvent
-          Description: "Capture AWS Batch jobs moving to the FAILED stage"
+          Description: "Capture ECS RunTask calls for AWS Batch jobs that failed to place"
           Properties:
             Pattern:
               detail-type:
@@ -202,6 +202,83 @@ Resources:
             Queue: !GetAtt QueueRunTask.Arn
             BatchSize: 1
             MaximumBatchingWindowInSeconds: 5
+
+  # ------------------------------------------------------
+
+  # StateMachine Jobs placed ---------------------------------
+
+  # SQS Queue receiving the ECS task state changes
+  QueueTaskEvents:
+    Type: AWS::SQS::Queue
+    Properties:
+      KmsMasterKeyId: alias/aws/sqs
+      VisibilityTimeout: 12 # 5 more seconds than the lambda timeout
+
+  ECSTaskEventsStateMachineServerless:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: src/ECSRunTask/ECSTaskEventsStateMachineServerless.asl.json
+      DefinitionSubstitutions:
+        ECSRegistrationTable: !Ref ECSInstancesMetadataTableServerless
+        SQSMetricsQueue: !Ref QueueTaskEvents
+      Tags:
+        Application: BatchMetricsDashboards
+      Type: EXPRESS
+      Tracing:
+        Enabled: true
+      Events:
+        ECSCloudwatchEventSource:
+          Type: CloudWatchEvent
+          Description: "Capture ECS task state change events for successfully placed AWS Batch jobs"
+          Properties:
+            Pattern:
+              detail-type:
+              - 'ECS Task State Change'
+              source:
+              - 'aws.ecs'
+
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt QueueTaskEvents.QueueName
+        - DynamoDBReadPolicy:
+            TableName: !Ref ECSInstancesMetadataTableServerless
+        - CloudWatchLogsFullAccess
+      Logging:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt ECSTaskEventsLogGroup.Arn
+        IncludeExecutionData: true
+        Level: 'ALL'
+
+  ECSTaskEventsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+       RetentionInDays: 7
+
+  QueueTaskEventsMetricToCWFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/ECSRunTask/RunTaskToCW
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      ReservedConcurrentExecutions: 30
+      Policies:
+        - SQSPollerPolicy:
+            QueueName: !GetAtt QueueTaskEvents.QueueName
+      Timeout: 10
+      MemorySize: 128
+      Tags:
+        Application: BatchMetricsDashboards
+      Events:
+        SQSPollTaskEvents:
+          Type: SQS
+          Description: "Process SQS task state change events to CW EMF"
+          Properties:
+            Queue: !GetAtt QueueTaskEvents.Arn
+            BatchSize: 1
+            MaximumBatchingWindowInSeconds: 5
+
+  # ------------------------------------------------------
 
   # StateMachine Jobs States ----------------------------
 
