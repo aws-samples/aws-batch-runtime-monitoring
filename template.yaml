@@ -20,7 +20,154 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   Collect metrics from AWS Batch, ECS and EC2 and display them in CloudWatch
 
+Parameters:
+  CreateTrail:
+    Description: Do you want to create an AWS CloudTrail Trail? You need at least one "Management events" Trail active in your AWS account to enable this tool. Please see the README for detailed information.
+    Default: "no"
+    Type: String
+    AllowedValues:
+      - "no"
+      - "yes"
+    ConstraintDescription: must specify yes or no.
+Conditions:
+  CreateProdResources: !Equals 
+    - !Ref CreateTrail
+    - "yes"
+
 Resources:
+
+# CloudTrail Trail Creation --------------------------------------
+
+# S3 bucket for the trail
+
+  S3CloudTrailBucket:
+    Type: AWS::S3::Bucket
+    Condition: CreateProdResources
+    Properties: 
+        PublicAccessBlockConfiguration: 
+            BlockPublicAcls : true
+            BlockPublicPolicy : true
+            IgnorePublicAcls : true
+            RestrictPublicBuckets : true
+
+  S3CloudTrailBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Condition: CreateProdResources
+    Properties:
+        Bucket: !Ref S3CloudTrailBucket
+        PolicyDocument:
+            Statement:
+            -
+                Action: "s3:GetBucketAcl"
+                Effect: Allow
+                Resource: !Sub arn:aws:s3:::${S3CloudTrailBucket}
+                Principal: 
+                    Service: "cloudtrail.amazonaws.com"
+            -
+                Action: "s3:PutObject"
+                Effect: Allow
+                Resource: !Sub arn:aws:s3:::${S3CloudTrailBucket}/*
+                Condition:
+                    StringEquals:
+                        s3:x-amz-acl: "bucket-owner-full-control"
+                Principal:
+                    Service: "cloudtrail.amazonaws.com"
+
+  # KMS key for the trail
+
+  KMSKeyForTrail:
+    Type: AWS::KMS::Key
+    Condition: CreateProdResources
+    Properties: 
+        Description: "Key for CloudTrail"
+        KeyPolicy: # Inspired by the Key policy created automatically by AWS CloudTrail from the console
+            Version: '2012-10-17'
+            Statement:
+            - 
+                Sid: "Enable IAM User Permissions"
+                Effect: Allow
+                Principal:
+                  AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+                Action: 'kms:*'
+                Resource: '*'
+            - 
+                Sid: "Allow CloudTrail to encrypt logs"
+                Effect: Allow
+                Principal:
+                  Service: "cloudtrail.amazonaws.com"
+                Action: 'kms:GenerateDataKey*'
+                Resource: '*'
+                Condition:
+                    StringEquals:
+                        AWS:SourceArn: !Sub arn:aws:cloudtrail:${AWS::Region}:${AWS::AccountId}:trail/${AWS::StackName}_trail # we cannot obtain this dinamically, indeed it would be a circular dependency
+                    StringLike: 
+                        kms:EncryptionContext:aws:cloudtrail:arn: !Sub "arn:aws:cloudtrail:*:${AWS::AccountId}:trail/*"
+            - 
+                Sid: "Allow CloudTrail to describe key"
+                Effect: Allow
+                Principal:
+                  Service: "cloudtrail.amazonaws.com"
+                Action: 'kms:DescribeKey'
+                Resource: '*'
+            - 
+                Sid: "Allow principals in the account to decrypt log files"
+                Effect: Allow
+                Principal:
+                  AWS: "*"
+                Action:
+                -   "kms:Decrypt"
+                -   "kms:ReEncryptFrom"
+                Resource: '*'
+                Condition:
+                    StringEquals:
+                      kms:CallerAccount: !Sub "${AWS::AccountId}"
+                    StringLike: 
+                        kms:EncryptionContext:aws:cloudtrail:arn: !Sub "arn:aws:cloudtrail:*:${AWS::AccountId}:trail/*"
+            - 
+                Sid: "Enable cross account log decryption"
+                Effect: Allow
+                Principal:
+                  AWS: "*"
+                Action:
+                -   "kms:Decrypt"
+                -   "kms:ReEncryptFrom"
+                Resource: '*'
+                Condition:
+                    StringEquals:
+                      kms:CallerAccount: !Sub "${AWS::AccountId}"
+                    StringLike: 
+                        kms:EncryptionContext:aws:cloudtrail:arn: !Sub "arn:aws:cloudtrail:*:${AWS::AccountId}:trail/*"
+        KeySpec: SYMMETRIC_DEFAULT
+        KeyUsage:  ENCRYPT_DECRYPT
+        MultiRegion: false
+  
+  CloudTrailKMSAlias:
+    Type: AWS::KMS::Alias
+    Condition: CreateProdResources
+    Properties: 
+        AliasName: !Sub alias/${AWS::StackName}_cloudtrail_key
+        TargetKeyId: !Ref KMSKeyForTrail
+
+
+# Trail
+
+  EventTrail:
+    Type: AWS::CloudTrail::Trail
+    Condition: CreateProdResources
+    Properties: 
+        EnableLogFileValidation: true
+        IsLogging: true
+        IsMultiRegionTrail: true
+        IncludeGlobalServiceEvents: true
+        KMSKeyId: !Ref CloudTrailKMSAlias
+        S3BucketName: !Ref S3CloudTrailBucket
+        TrailName : !Sub ${AWS::StackName}_trail # In order to create the KMS policy of the associated key we need to know the Trail name to build the arn
+    DependsOn: 
+    - S3CloudTrailBucketPolicy
+
+  # ------------------------------------------------------
+
+
   # DynamoDB Tables --------------------------------------
 
   ECSInstancesMetadataTableServerless:
