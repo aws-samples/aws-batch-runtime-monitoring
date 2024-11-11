@@ -117,8 +117,11 @@ Resources:
           - --cpu-load
           - 100
         Image: !Join ['', [!Ref 'AWS::AccountId','.dkr.ecr.', !Ref 'AWS::Region', '.amazonaws.com/', !Ref StressRepository ] ]
-        Vcpus: 2
-        Memory: 3192
+        ResourceRequirements:
+          - Type: MEMORY
+            Value: '3192'
+          - Type: VCPU
+            Value: '2'
       PropagateTags: true
       RetryStrategy:
         Attempts: 10
