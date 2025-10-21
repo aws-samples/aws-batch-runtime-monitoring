@@ -1,0 +1,2 @@
+# No external dependencies required for this Lambda function
+# Uses only Python standard library modules: json, sys, os

@@ -8,12 +8,12 @@ import json
 import sys
 import os
 
-# Add the BatchJobsStates directory to Python path to import the function
+# Add the ParseJobProperties directory to Python path to import the function
 script_dir = os.path.dirname(os.path.abspath(__file__))
-batch_jobs_states_dir = os.path.join(os.path.dirname(os.path.dirname(script_dir)), "src", "BatchJobsStates")
-sys.path.insert(0, batch_jobs_states_dir)
+parse_job_properties_dir = os.path.join(os.path.dirname(os.path.dirname(script_dir)), "src", "BatchJobsStates", "ParseJobProperties")
+sys.path.insert(0, parse_job_properties_dir)
 
-from ParseJobAttributesFunction import lambda_handler
+from app import lambda_handler
 
 
 def load_test_event(filename):

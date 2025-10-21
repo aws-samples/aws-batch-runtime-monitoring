@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- ParseJobAttributesFunction Lambda for centralized AWS Batch job attribute parsing
+- ParseJobPropertiesFunction Lambda for centralized AWS Batch job attribute parsing
 - Support for multi-container AWS Batch jobs using ecsProperties
 - Comprehensive test suite with real AWS Batch job state change events
 - Organized test structure in tests/BatchJobStatesTests/ directory

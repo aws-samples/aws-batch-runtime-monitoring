@@ -15,7 +15,7 @@ tests/
     │   ├── batch-event-STARTING.json
     │   └── batch-event-SUCCEEDED.json
     ├── run_tests.py                   # Test runner for BatchJobStates tests
-    ├── test_parse_job_attributes.py   # Tests for ParseJobAttributesFunction
+    ├── test_parse_job_attributes.py   # Tests for ParseJobPropertiesFunction
     └── test_state_machine.py          # State machine simulation tests
 ```
 
@@ -42,7 +42,7 @@ uv run python tests/BatchJobStatesTests/test_state_machine.py
 ### BatchJobStatesTests
 Tests for the simplified Batch Job States state machine and Lambda function:
 
-- **test_parse_job_attributes.py**: Tests the ParseJobAttributesFunction Lambda
+- **test_parse_job_attributes.py**: Tests the ParseJobPropertiesFunction Lambda
   - Tests parsing of different job state events (STARTING, RUNNING, SUCCEEDED)
   - Tests parent array job detection
   - Tests error handling with malformed events

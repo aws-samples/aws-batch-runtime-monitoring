@@ -46,7 +46,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "${ParseJobAttributesFunction}",
+        "FunctionName": "${ParseJobPropertiesFunction}",
         "Payload.$": "$.Execution.Input"
       },
       "Retry": [
