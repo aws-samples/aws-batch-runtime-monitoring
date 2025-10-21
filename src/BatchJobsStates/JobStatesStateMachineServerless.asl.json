@@ -37,85 +37,61 @@
               "StringEquals": "STARTING"
             }
           ],
-          "Next": "Contain Array Properties?"
+          "Next": "Parse Job Attributes"
         }
       ],
       "Default": "SQS SendMessage Job State Not Associated"
     },
-    "Contain Array Properties?": {
-      "Type": "Choice",
-      "Choices": [
+    "Parse Job Attributes": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${ParseJobAttributesFunction}",
+        "Payload.$": "$.Execution.Input"
+      },
+      "Retry": [
         {
-          "Variable": "$$.Execution.Input.detail.arrayProperties",
-          "IsPresent": true,
-          "Next": "Get Array Properties"
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 1,
+          "BackoffRate": 2.0,
+          "MaxAttempts": 3
         }
       ],
-      "Default": "Get Job State for Instance Association"
+      "ResultSelector": {
+        "JobId.$": "$.Payload.JobId",
+        "Region.$": "$.Payload.Region",
+        "JobQueue.$": "$.Payload.JobQueue",
+        "JobName.$": "$.Payload.JobName",
+        "JobDefinition.$": "$.Payload.JobDefinition",
+        "LastEventType.$": "$.Payload.LastEventType",
+        "LastEventTime.$": "$.Payload.LastEventTime",
+        "isParentArrayJob.$": "$.Payload.isParentArrayJob",
+        "containerInstanceArn.$": "$.Payload.containerInstanceArn"
+      },
+      "ResultPath": "$",
+      "Next": "Check If Parent Array Job"
     },
-    "Get Array Properties": {
-      "Type": "Pass",
-      "Next": "Is Parent Job?",
-      "InputPath": "$$.Execution.Input.detail.arrayProperties",
-      "ResultPath": "$.ArrayProperties"
-    },
-    "Is Parent Job?": {
+    "Check If Parent Array Job": {
       "Type": "Choice",
       "Choices": [
         {
-          "Variable": "$.ArrayProperties.size",
-          "IsPresent": true,
+          "Variable": "$.isParentArrayJob",
+          "BooleanEquals": true,
           "Next": "Skip Event"
         }
       ],
-      "Default": "Get Job State for Instance Association"
+      "Default": "Check Container Instance ARN"
     },
-    "Get Job State for Instance Association": {
+    "Check Container Instance ARN": {
       "Type": "Choice",
       "Choices": [
         {
-          "Variable": "$$.Execution.Input.detail.container.containerInstanceArn",
+          "Variable": "$.containerInstanceArn",
           "IsPresent": true,
-          "Next": "Get ContainerInstanceId from containerInstanceArn"
-        }
-      ],
-      "Default": "Is Attempted?"
-    },
-    "Is Attempted?": {
-      "Type": "Choice",
-      "InputPath": "$$.Execution.Input.detail.attempts[-1]",
-      "Choices": [
-          {
-            "Variable": "$",
-            "IsPresent": true,
-            "Next": "Get Job State for Instance Association Array"
-          }
-      ],
-      "Default": "Skip Event"
-    },
-    "Get Job State for Instance Association Array": {
-      "Type": "Choice",
-      "InputPath": "$$.Execution.Input.detail.attempts[-1]",
-      "Choices": [
-        {
-          "Variable": "$.container.containerInstanceArn",
-          "IsPresent": true,
-          "Next": "Get ContainerInstanceId from attempts[-1].container.containerInstanceArn"
+          "Next": "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId"
         }
       ],
       "Default": "Skip Event"
-    },
-    "Get ContainerInstanceId from containerInstanceArn": {
-      "Type": "Pass",
-      "Next": "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId",
-      "InputPath": "$$.Execution.Input.detail.container.containerInstanceArn",
-      "ResultPath": "$.containerInstanceArn"
-    },
-    "Get ContainerInstanceId from attempts[-1].container.containerInstanceArn": {
-      "Type": "Pass",
-      "Next": "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId",
-      "InputPath": "$$.Execution.Input.detail.attempts[-1].container.containerInstanceArn",
-      "ResultPath": "$.containerInstanceArn"
     },
     "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId": {
       "Type": "Task",

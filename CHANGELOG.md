@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- ParseJobAttributesFunction Lambda for centralized AWS Batch job attribute parsing
+- Support for multi-container AWS Batch jobs using ecsProperties
+- Comprehensive test suite with real AWS Batch job state change events
+- Organized test structure in tests/BatchJobStatesTests/ directory
+- Test runners for individual and suite-level test execution
+- Documentation for test structure and usage
+
+### Changed
+- Simplified JobStatesStateMachineServerless from 8 states to 3 states
+- Replaced complex state machine logic with Lambda function for better maintainability
+- Centralized all job attribute parsing logic in Python code
+- Improved error handling for malformed job state change events
+- Enhanced support for both single-container and multi-container job definitions
+
+### Fixed
+- Proper handling of containerInstanceArn extraction from ecsProperties.taskProperties
+- Correct fallback logic for attempts array in multi-container jobs
+- Parent array job detection using arrayProperties.size
+
 ## [1.0.0] - 2021-04-30
 ### Added
 - Initial Release

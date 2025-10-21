@@ -1,0 +1,88 @@
+{
+  "version": "0",
+  "id": "441fa78f-dd2d-d1a6-a496-a4b8ced16fb0",
+  "detail-type": "Batch Job State Change",
+  "source": "aws.batch",
+  "account": "653295002771",
+  "time": "2025-10-17T13:19:25Z",
+  "region": "us-east-1",
+  "resources": [
+    "arn:aws:batch:us-east-1:653295002771:job/a58812f1-a6bc-4791-a0ba-26618d74bb33"
+  ],
+  "detail": {
+    "jobArn": "arn:aws:batch:us-east-1:653295002771:job/a58812f1-a6bc-4791-a0ba-26618d74bb33",
+    "jobName": "cpu-stress-test-1760707009",
+    "jobId": "a58812f1-a6bc-4791-a0ba-26618d74bb33",
+    "jobQueue": "arn:aws:batch:us-east-1:653295002771:job-queue/batch-job-queue-dev",
+    "status": "STARTING",
+    "shareIdentifier": "blue",
+    "schedulingPriority": 1,
+    "attempts": [],
+    "createdAt": 1760707011622,
+    "retryStrategy": {
+      "attempts": 3,
+      "evaluateOnExit": []
+    },
+    "dependsOn": [],
+    "jobDefinition": "arn:aws:batch:us-east-1:653295002771:job-definition/cpu-stress-test-dev:2",
+    "parameters": {
+      "stressMinutes": "1"
+    },
+    "timeout": {
+      "attemptDurationSeconds": 3600
+    },
+    "tags": {
+      "resourceArn": "arn:aws:batch:us-east-1:653295002771:job/a58812f1-a6bc-4791-a0ba-26618d74bb33"
+    },
+    "propagateTags": true,
+    "platformCapabilities": [
+      "EC2"
+    ],
+    "eksAttempts": [],
+    "ecsProperties": {
+      "taskProperties": [
+        {
+          "containers": [
+            {
+              "command": [],
+              "dependsOn": [],
+              "environment": [
+                {
+                  "name": "ENVIRONMENT",
+                  "value": "dev"
+                },
+                {
+                  "name": "AWS_DEFAULT_REGION",
+                  "value": "us-east-1"
+                }
+              ],
+              "essential": true,
+              "image": "653295002771.dkr.ecr.us-east-1.amazonaws.com/cpu-stress-test:latest",
+              "mountPoints": [],
+              "name": "cpu-stress-container",
+              "resourceRequirements": [
+                {
+                  "value": "2",
+                  "type": "VCPU"
+                },
+                {
+                  "value": "2048",
+                  "type": "MEMORY"
+                }
+              ],
+              "secrets": [],
+              "ulimits": [],
+              "logStreamName": "cpu-stress-test-dev/cpu-stress-container/c9fc21f3ce0b4965894fbd65da38cb24",
+              "networkInterfaces": []
+            }
+          ],
+          "containerInstanceArn": "arn:aws:ecs:us-east-1:653295002771:container-instance/AWSBatch-batch-compute-env-dev-0a95f22d-7108-3c4e-99f7-2fd92e1a8941/e4ec8ce405b346f8a7b104f695184df7",
+          "taskArn": "arn:aws:ecs:us-east-1:653295002771:task/AWSBatch-batch-compute-env-dev-0a95f22d-7108-3c4e-99f7-2fd92e1a8941/c9fc21f3ce0b4965894fbd65da38cb24",
+          "executionRoleArn": "arn:aws:iam::653295002771:role/BatchEcsExecutionRole-dev",
+          "taskRoleArn": "arn:aws:iam::653295002771:role/CpuStressTestJobRole-dev",
+          "volumes": []
+        }
+      ]
+    }
+  }
+}
