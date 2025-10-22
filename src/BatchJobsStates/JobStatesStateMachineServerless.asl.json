@@ -66,6 +66,7 @@
         "LastEventType.$": "$.Payload.LastEventType",
         "LastEventTime.$": "$.Payload.LastEventTime",
         "isParentArrayJob.$": "$.Payload.isParentArrayJob",
+        "isMnpChildNode.$": "$.Payload.isMnpChildNode",
         "containerInstanceArn.$": "$.Payload.containerInstanceArn"
       },
       "ResultPath": "$",
@@ -76,6 +77,17 @@
       "Choices": [
         {
           "Variable": "$.isParentArrayJob",
+          "BooleanEquals": true,
+          "Next": "Skip Event"
+        }
+      ],
+      "Default": "Check If MNP Child Node"
+    },
+    "Check If MNP Child Node": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.isMnpChildNode",
           "BooleanEquals": true,
           "Next": "Skip Event"
         }

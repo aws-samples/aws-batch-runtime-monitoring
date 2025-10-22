@@ -1,0 +1,92 @@
+{
+  "version": "0",
+  "id": "87654321-4321-4321-4321-210987654321",
+  "detail-type": "Batch Job State Change",
+  "source": "aws.batch",
+  "account": "123456789012",
+  "time": "2025-10-22T18:59:07Z",
+  "region": "us-east-1",
+  "resources": [
+    "arn:aws:batch:us-east-1:123456789012:job/b0814c91-61c2-4a2b-a790-44781b182ef9#1"
+  ],
+  "detail": {
+    "jobArn": "arn:aws:batch:us-east-1:123456789012:job/b0814c91-61c2-4a2b-a790-44781b182ef9#1",
+    "jobName": "RMNP-2",
+    "jobId": "b0814c91-61c2-4a2b-a790-44781b182ef9#1",
+    "jobQueue": "arn:aws:batch:us-east-1:123456789012:job-queue/BatchJobQueue-aPDxM4zSFaWt2rp0",
+    "status": "RUNNING",
+    "shareIdentifier": "default",
+    "schedulingPriority": 1,
+    "attempts": [
+      {
+        "startedAt": 1761137620069,
+        "statusReason": "Task is running",
+        "taskProperties": [
+          {
+            "containerInstanceArn": "arn:aws:ecs:us-east-1:123456789012:container-instance/AWSBatch-BatchComputeEnvironment-oHxuMlOqgBoID4mL-c14e913b-d5ac-3ed6-9f0b-bad3c2e3eea4/abe0ae5a7d404b22b5eb30f958c7fb93",
+            "taskArn": "arn:aws:ecs:us-east-1:123456789012:task/AWSBatch-BatchComputeEnvironment-oHxuMlOqgBoID4mL-c14e913b-d5ac-3ed6-9f0b-bad3c2e3eea4/1af8dc61d93145919542b3e0f6982ac5",
+            "containers": [
+              {
+                "exitCode": 0,
+                "name": "worker",
+                "logStreamName": "RayClusterJobDefinition-GUn4UK5Y9AGHo0pI/worker/1af8dc61d93145919542b3e0f6982ac5"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": 1761137571260,
+    "retryStrategy": {
+      "attempts": 1,
+      "evaluateOnExit": []
+    },
+    "dependsOn": [],
+    "jobDefinition": "arn:aws:batch:us-east-1:123456789012:job-definition/RayClusterJobDefinition-GUn4UK5Y9AGHo0pI:1",
+    "parameters": {},
+    "timeout": {
+      "attemptDurationSeconds": 7200
+    },
+    "tags": {},
+    "propagateTags": true,
+    "platformCapabilities": [],
+    "eksAttempts": [],
+    "ecsProperties": {
+      "taskProperties": [
+        {
+          "containers": [
+            {
+              "command": ["/opt/ray/bin/run-ray-worker.sh"],
+              "dependsOn": [],
+              "environment": [],
+              "image": "123456789012.dkr.ecr.us-east-1.amazonaws.com/cdk-hnb659fds-container-assets-123456789012-us-east-1:690ebb2a392df7402a2c932c4c65041b90bcaa24686321355d6a0df928959d71",
+              "mountPoints": [],
+              "name": "worker",
+              "resourceRequirements": [
+                {
+                  "value": "32",
+                  "type": "VCPU"
+                },
+                {
+                  "value": "60416",
+                  "type": "MEMORY"
+                }
+              ],
+              "secrets": [],
+              "ulimits": []
+            }
+          ],
+          "containerInstanceArn": "arn:aws:ecs:us-east-1:123456789012:container-instance/AWSBatch-BatchComputeEnvironment-oHxuMlOqgBoID4mL-c14e913b-d5ac-3ed6-9f0b-bad3c2e3eea4/abe0ae5a7d404b22b5eb30f958c7fb93",
+          "taskArn": "arn:aws:ecs:us-east-1:123456789012:task/AWSBatch-BatchComputeEnvironment-oHxuMlOqgBoID4mL-c14e913b-d5ac-3ed6-9f0b-bad3c2e3eea4/1af8dc61d93145919542b3e0f6982ac5",
+          "executionRoleArn": "arn:aws:iam::123456789012:role/BatchRayMnpStack-BatchJobExecutionRoleD982701D-09Nn26csNKKx",
+          "taskRoleArn": "arn:aws:iam::123456789012:role/BatchRayMnpStack-BatchTaskRoleA9B134D3-CFI9a4IPmnO2",
+          "volumes": []
+        }
+      ]
+    },
+    "nodeDetails": {
+      "nodeIndex": 1,
+      "isMainNode": false
+    }
+  }
+}

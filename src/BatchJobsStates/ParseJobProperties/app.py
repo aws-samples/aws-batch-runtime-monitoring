@@ -34,6 +34,17 @@ def lambda_handler(event, context):
             # If arrayProperties contains 'size', this is a parent array job
             is_parent_array_job = True
         
+        # Check if this is a multi-node parallel (MNP) job child node
+        is_mnp_child_node = False
+        node_details = detail.get('nodeDetails')
+        
+        if node_details:
+            # This is an MNP job - check if it's a child node
+            is_main_node = node_details.get('isMainNode', False)
+            if not is_main_node:
+                # This is a child node - we should skip processing to avoid duplicate metrics
+                is_mnp_child_node = True
+        
         # Determine container instance ARN
         container_instance_arn = None
         
@@ -72,6 +83,7 @@ def lambda_handler(event, context):
         result = {
             **job_attributes,
             'isParentArrayJob': is_parent_array_job,
+            'isMnpChildNode': is_mnp_child_node,
             'containerInstanceArn': container_instance_arn
         }
         
@@ -82,5 +94,6 @@ def lambda_handler(event, context):
         return {
             'error': str(e),
             'isParentArrayJob': False,
+            'isMnpChildNode': False,
             'containerInstanceArn': None
         }

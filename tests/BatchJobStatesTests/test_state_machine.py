@@ -67,6 +67,7 @@ def simulate_parse_job_attributes(state_data):
         "LastEventType": lambda_result["LastEventType"],
         "LastEventTime": lambda_result["LastEventTime"],
         "isParentArrayJob": lambda_result["isParentArrayJob"],
+        "isMnpChildNode": lambda_result["isMnpChildNode"],
         "containerInstanceArn": lambda_result["containerInstanceArn"]
     }
 
@@ -74,6 +75,14 @@ def simulate_parse_job_attributes(state_data):
 def simulate_check_if_parent_array_job(state_data):
     """Simulate the 'Check If Parent Array Job' Choice state"""
     if state_data.get("isParentArrayJob") == True:
+        return "Skip Event"
+    else:
+        return "Check If MNP Child Node"
+
+
+def simulate_check_if_mnp_child_node(state_data):
+    """Simulate the 'Check If MNP Child Node' Choice state"""
+    if state_data.get("isMnpChildNode") == True:
         return "Skip Event"
     else:
         return "Check Container Instance ARN"
@@ -119,8 +128,17 @@ def simulate_state_machine_execution(event):
         print("   ⏭️  Parent array job detected, skipping event")
         return "Skip Event", state_data
     
-    # Step 5: Check Container Instance ARN
-    print("\n🖥️  Step 5: Check Container Instance ARN")
+    # Step 5: Check If MNP Child Node
+    print("\n🔗 Step 5: Check If MNP Child Node")
+    next_state = simulate_check_if_mnp_child_node(state_data)
+    print(f"   Next state: {next_state}")
+    
+    if next_state == "Skip Event":
+        print("   ⏭️  MNP child node detected, skipping event")
+        return "Skip Event", state_data
+    
+    # Step 6: Check Container Instance ARN
+    print("\n🖥️  Step 6: Check Container Instance ARN")
     next_state = simulate_check_container_instance_arn(state_data)
     print(f"   Next state: {next_state}")
     
@@ -179,6 +197,47 @@ def test_parent_array_job_flow():
     return final_state, final_data
 
 
+def test_mnp_child_node_flow():
+    """Test the flow with MNP child node (should skip)"""
+    print("\n" + "=" * 60)
+    print("Testing MNP child node flow")
+    print("=" * 60)
+    
+    event = load_test_event("batch-event-MNP-CHILD-NODE.json")
+    
+    final_state, final_data = simulate_state_machine_execution(event)
+    
+    print(f"\n🏁 Final state: {final_state}")
+    
+    # Should skip the event
+    assert final_state == "Skip Event"
+    assert final_data["isMnpChildNode"] == True
+    
+    print("✅ MNP child node flow test passed!")
+    return final_state, final_data
+
+
+def test_mnp_main_node_flow():
+    """Test the flow with MNP main node (should process)"""
+    print("\n" + "=" * 60)
+    print("Testing MNP main node flow")
+    print("=" * 60)
+    
+    event = load_test_event("batch-event-MNP-MAIN-NODE.json")
+    
+    final_state, final_data = simulate_state_machine_execution(event)
+    
+    print(f"\n🏁 Final state: {final_state}")
+    
+    # Should proceed to DynamoDB lookup
+    assert final_state == "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId"
+    assert final_data["isMnpChildNode"] == False
+    assert final_data["containerInstanceArn"] is not None
+    
+    print("✅ MNP main node flow test passed!")
+    return final_state, final_data
+
+
 def test_invalid_job_state_flow():
     """Test the flow with invalid job state"""
     print("\n" + "=" * 60)
@@ -207,6 +266,8 @@ if __name__ == "__main__":
     try:
         test_starting_event_flow()
         test_parent_array_job_flow()
+        test_mnp_main_node_flow()
+        test_mnp_child_node_flow()
         test_invalid_job_state_flow()
         
         print("\n" + "🎉" * 20)

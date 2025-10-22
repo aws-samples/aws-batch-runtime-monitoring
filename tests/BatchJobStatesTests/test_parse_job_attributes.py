@@ -41,13 +41,13 @@ def test_starting_event():
     # Assertions
     assert result['JobId'] == "a58812f1-a6bc-4791-a0ba-26618d74bb33"
     assert result['Region'] == "us-east-1"
-    assert result['JobQueue'] == "arn:aws:batch:us-east-1:653295002771:job-queue/batch-job-queue-dev"
+    assert result['JobQueue'] == "arn:aws:batch:us-east-1:123456789012:job-queue/batch-job-queue-dev"
     assert result['JobName'] == "cpu-stress-test-1760707009"
-    assert result['JobDefinition'] == "arn:aws:batch:us-east-1:653295002771:job-definition/cpu-stress-test-dev:2"
+    assert result['JobDefinition'] == "arn:aws:batch:us-east-1:123456789012:job-definition/cpu-stress-test-dev:2"
     assert result['LastEventType'] == "STARTING"
     assert result['LastEventTime'] == "2025-10-17T13:19:25Z"
     assert result['isParentArrayJob'] == False
-    assert result['containerInstanceArn'] == "arn:aws:ecs:us-east-1:653295002771:container-instance/AWSBatch-batch-compute-env-dev-0a95f22d-7108-3c4e-99f7-2fd92e1a8941/e4ec8ce405b346f8a7b104f695184df7"
+    assert result['containerInstanceArn'] == "arn:aws:ecs:us-east-1:123456789012:container-instance/AWSBatch-batch-compute-env-dev-0a95f22d-7108-3c4e-99f7-2fd92e1a8941/e4ec8ce405b346f8a7b104f695184df7"
     
     print("✅ STARTING event test passed!")
     return result
@@ -117,6 +117,48 @@ def test_array_job_parent():
     return result
 
 
+def test_mnp_main_node():
+    """Test MNP main node event (should be processed)"""
+    print("\nTesting MNP main node...")
+    
+    event = load_test_event("batch-event-MNP-MAIN-NODE.json")
+    
+    result = lambda_handler(event, {})
+    
+    print("Lambda function result:")
+    print(json.dumps(result, indent=2))
+    
+    # Should process main node events
+    assert result['LastEventType'] == "RUNNING"
+    assert result['isParentArrayJob'] == False
+    assert result['isMnpChildNode'] == False
+    assert result['containerInstanceArn'] == "arn:aws:ecs:us-east-1:123456789012:container-instance/AWSBatch-BatchComputeEnvironment-oHxuMlOqgBoID4mL-c14e913b-d5ac-3ed6-9f0b-bad3c2e3eea4/7d801024862b4c3bb68580aab314e561"
+    
+    print("✅ MNP main node test passed!")
+    return result
+
+
+def test_mnp_child_node():
+    """Test MNP child node event (should be skipped)"""
+    print("\nTesting MNP child node...")
+    
+    event = load_test_event("batch-event-MNP-CHILD-NODE.json")
+    
+    result = lambda_handler(event, {})
+    
+    print("Lambda function result:")
+    print(json.dumps(result, indent=2))
+    
+    # Should mark child node for skipping
+    assert result['LastEventType'] == "RUNNING"
+    assert result['isParentArrayJob'] == False
+    assert result['isMnpChildNode'] == True
+    assert result['containerInstanceArn'] == "arn:aws:ecs:us-east-1:123456789012:container-instance/AWSBatch-BatchComputeEnvironment-oHxuMlOqgBoID4mL-c14e913b-d5ac-3ed6-9f0b-bad3c2e3eea4/abe0ae5a7d404b22b5eb30f958c7fb93"
+    
+    print("✅ MNP child node test passed!")
+    return result
+
+
 def test_error_handling():
     """Test error handling with malformed event"""
     print("\nTesting error handling...")
@@ -129,6 +171,7 @@ def test_error_handling():
     
     # Should handle gracefully
     assert 'error' not in result or result.get('isParentArrayJob') == False
+    assert result.get('isMnpChildNode') == False
     
     print("✅ Error handling test passed!")
     return result
@@ -142,6 +185,8 @@ if __name__ == "__main__":
         test_running_event()
         test_succeeded_event()
         test_array_job_parent()
+        test_mnp_main_node()
+        test_mnp_child_node()
         test_error_handling()
         
         print("\n🎉 All tests passed!")

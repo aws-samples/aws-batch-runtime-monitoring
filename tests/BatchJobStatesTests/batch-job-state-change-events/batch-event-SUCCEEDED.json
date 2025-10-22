@@ -3,17 +3,17 @@
   "id": "de5ef4bd-1a9c-90e7-c940-f03de5a4dafd",
   "detail-type": "Batch Job State Change",
   "source": "aws.batch",
-  "account": "653295002771",
+  "account": "123456789012",
   "time": "2025-10-17T13:28:51Z",
   "region": "us-east-1",
   "resources": [
-    "arn:aws:batch:us-east-1:653295002771:job/7419bcec-23b4-4a65-981b-857c5a9040a5"
+    "arn:aws:batch:us-east-1:123456789012:job/7419bcec-23b4-4a65-981b-857c5a9040a5"
   ],
   "detail": {
-    "jobArn": "arn:aws:batch:us-east-1:653295002771:job/7419bcec-23b4-4a65-981b-857c5a9040a5",
+    "jobArn": "arn:aws:batch:us-east-1:123456789012:job/7419bcec-23b4-4a65-981b-857c5a9040a5",
     "jobName": "cpu-stress-test-1760707292",
     "jobId": "7419bcec-23b4-4a65-981b-857c5a9040a5",
-    "jobQueue": "arn:aws:batch:us-east-1:653295002771:job-queue/batch-job-queue-dev",
+    "jobQueue": "arn:aws:batch:us-east-1:123456789012:job-queue/batch-job-queue-dev",
     "status": "SUCCEEDED",
     "shareIdentifier": "blue",
     "schedulingPriority": 1,
@@ -24,8 +24,8 @@
         "statusReason": "Essential container in task exited",
         "taskProperties": [
           {
-            "containerInstanceArn": "arn:aws:ecs:us-east-1:653295002771:container-instance/AWSBatch-batch-compute-env-dev-0a95f22d-7108-3c4e-99f7-2fd92e1a8941/f711cf81b719480385a66cc3329704b1",
-            "taskArn": "arn:aws:ecs:us-east-1:653295002771:task/AWSBatch-batch-compute-env-dev-0a95f22d-7108-3c4e-99f7-2fd92e1a8941/a6611972e03e4d728498be97309e12d9",
+            "containerInstanceArn": "arn:aws:ecs:us-east-1:123456789012:container-instance/AWSBatch-batch-compute-env-dev-0a95f22d-7108-3c4e-99f7-2fd92e1a8941/f711cf81b719480385a66cc3329704b1",
+            "taskArn": "arn:aws:ecs:us-east-1:123456789012:task/AWSBatch-batch-compute-env-dev-0a95f22d-7108-3c4e-99f7-2fd92e1a8941/a6611972e03e4d728498be97309e12d9",
             "containers": [
               {
                 "exitCode": 0,
@@ -47,7 +47,7 @@
     "startedAt": 1760707430919,
     "stoppedAt": 1760707731125,
     "dependsOn": [],
-    "jobDefinition": "arn:aws:batch:us-east-1:653295002771:job-definition/cpu-stress-test-dev:2",
+    "jobDefinition": "arn:aws:batch:us-east-1:123456789012:job-definition/cpu-stress-test-dev:2",
     "parameters": {
       "stressMinutes": "1"
     },
@@ -55,7 +55,7 @@
       "attemptDurationSeconds": 3600
     },
     "tags": {
-      "resourceArn": "arn:aws:batch:us-east-1:653295002771:job/7419bcec-23b4-4a65-981b-857c5a9040a5"
+      "resourceArn": "arn:aws:batch:us-east-1:123456789012:job/7419bcec-23b4-4a65-981b-857c5a9040a5"
     },
     "propagateTags": true,
     "platformCapabilities": [
@@ -80,7 +80,7 @@
                 }
               ],
               "essential": true,
-              "image": "653295002771.dkr.ecr.us-east-1.amazonaws.com/cpu-stress-test:latest",
+              "image": "123456789012.dkr.ecr.us-east-1.amazonaws.com/cpu-stress-test:latest",
               "mountPoints": [],
               "name": "cpu-stress-container",
               "resourceRequirements": [
@@ -100,10 +100,10 @@
               "networkInterfaces": []
             }
           ],
-          "containerInstanceArn": "arn:aws:ecs:us-east-1:653295002771:container-instance/AWSBatch-batch-compute-env-dev-0a95f22d-7108-3c4e-99f7-2fd92e1a8941/f711cf81b719480385a66cc3329704b1",
-          "taskArn": "arn:aws:ecs:us-east-1:653295002771:task/AWSBatch-batch-compute-env-dev-0a95f22d-7108-3c4e-99f7-2fd92e1a8941/a6611972e03e4d728498be97309e12d9",
-          "executionRoleArn": "arn:aws:iam::653295002771:role/BatchEcsExecutionRole-dev",
-          "taskRoleArn": "arn:aws:iam::653295002771:role/CpuStressTestJobRole-dev",
+          "containerInstanceArn": "arn:aws:ecs:us-east-1:123456789012:container-instance/AWSBatch-batch-compute-env-dev-0a95f22d-7108-3c4e-99f7-2fd92e1a8941/f711cf81b719480385a66cc3329704b1",
+          "taskArn": "arn:aws:ecs:us-east-1:123456789012:task/AWSBatch-batch-compute-env-dev-0a95f22d-7108-3c4e-99f7-2fd92e1a8941/a6611972e03e4d728498be97309e12d9",
+          "executionRoleArn": "arn:aws:iam::123456789012:role/BatchEcsExecutionRole-dev",
+          "taskRoleArn": "arn:aws:iam::123456789012:role/CpuStressTestJobRole-dev",
           "volumes": []
         }
       ]
