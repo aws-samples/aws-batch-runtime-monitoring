@@ -14,7 +14,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: |
   Collect metrics from AWS Batch, ECS and EC2 and display them in CloudWatch
@@ -227,7 +227,8 @@ Resources:
       Events:
         ECSCloudwatchEventSource:
           Type: CloudWatchEvent
-          Description: Capture ECS task state change events for successfully placed AWS
+          Description:
+            Capture ECS task state change events for successfully placed AWS
             Batch jobs
           Properties:
             Pattern:
@@ -294,8 +295,14 @@ Resources:
     Properties:
       CodeUri: src/BatchJobsStates/ParseJobProperties
       Handler: app.lambda_handler
-      Runtime: python3.9
+      Runtime: python3.12
       Timeout: 30
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - batch:DescribeJobs
+              Resource: "*"
       Tags:
         Application: BatchMetricsDashboards
 
@@ -372,7 +379,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -381,23 +388,23 @@ Resources:
       Policies:
         - PolicyName: ASGMonitoringLogsPolicy
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: '*'
+                Resource: "*"
         - PolicyName: ASGMonitoringASGPolicy
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
                   - autoscaling:EnableMetricsCollection
                   - autoscaling:DescribeAutoScalingGroups
-                Resource: '*'
+                Resource: "*"
 
   ASGMonitoringFunction:
     Type: AWS::Serverless::Function
@@ -431,7 +438,7 @@ Resources:
     Type: AWS::CloudWatch::Dashboard
     Properties:
       DashboardName: !Join
-        - '-'
+        - "-"
         - - !Ref AWS::Region
           - Batch-ECS-InstancesRegistration
       DashboardBody: !Sub
@@ -613,7 +620,7 @@ Resources:
     Type: AWS::CloudWatch::Dashboard
     Properties:
       DashboardName: !Join
-        - '-'
+        - "-"
         - - !Ref AWS::Region
           - Batch-Jobs-Placement
       DashboardBody: !Sub
@@ -893,7 +900,7 @@ Resources:
     Type: AWS::CloudWatch::Dashboard
     Properties:
       DashboardName: !Join
-        - '-'
+        - "-"
         - - !Ref AWS::Region
           - Batch-Jobs-States
       DashboardBody: !Sub
@@ -1484,7 +1491,7 @@ Resources:
     Type: AWS::CloudWatch::Dashboard
     Properties:
       DashboardName: !Join
-        - '-'
+        - "-"
         - - !Ref AWS::Region
           - Batch-EC2-Capacity
       DashboardBody: !Sub
@@ -1703,7 +1710,7 @@ Resources:
     Type: AWS::CloudWatch::Dashboard
     Properties:
       DashboardName: !Join
-        - '-'
+        - "-"
         - - !Ref AWS::Region
           - Batch-ASG-Utilization
       DashboardBody: !Sub
@@ -1843,9 +1850,7 @@ Resources:
         - DeployedRegion: !Ref AWS::Region
   # ------------------------------------------------------
 
-
 Outputs:
-
   BatchMetricsECSInstancesRegistrationDashboard:
     Description: CloudWatch Dashboard for ECS Instance (de)Registration Calls
     Value: !Sub

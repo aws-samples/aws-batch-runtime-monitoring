@@ -1,2 +1,2 @@
-# No external dependencies required for this Lambda function
-# Uses only Python standard library modules: json, sys, os
+# Dependencies for ParseJobProperties Lambda function
+boto3>=1.26.0  # Required for AWS Batch API calls to query main node status

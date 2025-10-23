@@ -82,8 +82,9 @@ def simulate_check_if_parent_array_job(state_data):
 
 def simulate_check_if_mnp_child_node(state_data):
     """Simulate the 'Check If MNP Child Node' Choice state"""
+    # Updated logic: MNP child nodes are now processed since they run on separate EC2 instances
     if state_data.get("isMnpChildNode") == True:
-        return "Skip Event"
+        return "Check Container Instance ARN"
     else:
         return "Check Container Instance ARN"
 
@@ -198,7 +199,7 @@ def test_parent_array_job_flow():
 
 
 def test_mnp_child_node_flow():
-    """Test the flow with MNP child node (should skip)"""
+    """Test the flow with MNP child node (should process since it runs on its own EC2 instance)"""
     print("\n" + "=" * 60)
     print("Testing MNP child node flow")
     print("=" * 60)
@@ -209,9 +210,10 @@ def test_mnp_child_node_flow():
     
     print(f"\n🏁 Final state: {final_state}")
     
-    # Should skip the event
-    assert final_state == "Skip Event"
+    # Should process the event since MNP child nodes run on separate EC2 instances
+    assert final_state == "DynamoDB GetItem EC2 InstanceId from ContainerInstanceId"
     assert final_data["isMnpChildNode"] == True
+    assert final_data["containerInstanceArn"] is not None
     
     print("✅ MNP child node flow test passed!")
     return final_state, final_data

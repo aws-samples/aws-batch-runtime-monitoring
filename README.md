@@ -39,8 +39,8 @@ sam deploy --guided
 
 You will be asked to provide a few parameters.
 
-Parameters
----
+### Parameters
+
 When creating the stack for the first time you will need to provide the following parameters:
 
 - **Stack Name**: name of the CloudFormation stack that will be deployed.
@@ -53,8 +53,7 @@ sam build
 sam deploy # use sam deploy --no-confirm-changeset to force the deployment without validation
 ```
 
-Cleanup
----
+### Cleanup
 
 To remove the SAM application, go to the CloudFormation page of the AWS Console, select your stack and click **Delete**.
 
@@ -62,25 +61,45 @@ Adding Monitoring to Existing Auto-Scaling Groups
 ---
 The Clusters Usage dashboards needs monitoring activated for each Auto-Scaling groups (ASGs), it is not done by default. The `ASGMonitoring` Lambda function in the serverless application automatically adds monitoring for new ASGs created by AWS Batch but to add it for existing ones you can run the following command in your terminal (install `jq`) or [AWS CloudShell](https://console.aws.amazon.com/cloudshell):
 
+This command identifies AWS Batch Auto-Scaling Groups by looking for "Batch" in their launch template names and enables the required CloudWatch metrics collection.
+
 ```bash
 aws autoscaling describe-auto-scaling-groups | \
-  jq -c '.AutoScalingGroups[] | select(.MixedInstancesPolicy.LaunchTemplate.LaunchTemplateSpecification.LaunchTemplateName | contains("Batch-lt")) | .AutoScalingGroupName' | \
+  jq -c '.AutoScalingGroups[] | select((.MixedInstancesPolicy.LaunchTemplate.LaunchTemplateSpecification.LaunchTemplateName // .LaunchTemplate.LaunchTemplateName // "") | contains("Batch")) | .AutoScalingGroupName' | \
   xargs -t -I {} aws autoscaling enable-metrics-collection  \
     --metrics GroupInServiceCapacity GroupDesiredCapacity GroupInServiceInstances \
     --granularity "1Minute" \
     --auto-scaling-group-name {}
 ```
 
-### Requirements
+To verify that monitoring has been enabled, you can check the enabled metrics for a specific ASG:
 
-To run the serverless application you need to install the [SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html) and have Python 3.8 installed on your host. Python 3.7 can be used as well by modifying the `template.yaml` file and replace the Lambda functions runtime from `python3.8` to `python3.7`. You can quickly do this with the following `sed` command in the repository directory:
+```bash
+aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names "YOUR_ASG_NAME" | \
+  jq '.AutoScalingGroups[0].EnabledMetrics'
+```
+
+## Requirements
+
+To run the serverless application you need to install the latest versions of the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and the [SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html). 
+
+We have configured the template to use Lambda supported runtime Python 3.12. To use other Python versions, modify the `template.yaml` file and replace the Lambda functions runtime from `python3.12` to your target version. An example using `sed` to change the version to the supported runtime `python3.11` can be done  with the following command in the repository directory:
 
 
 ```bash
-sed -i 's/3\.8/3\.7/g' template.yaml
+sed -i 's/3\.12/3\.11/g' template.yaml
 ```
 
-If you plan to use [AWS CloudShell](https://aws.amazon.com/cloudshell/) to deploy the SAM template, please modify the Lambda runtime to `3.7` as suggested above (unless `3.8` is available) and make your Python 3 command the default for `python`: `alias python=/usr/bin/python3.7`. You can check the Python version available in CloudShell with `python3 --version`.
+If you plan to use [AWS CloudShell](https://aws.amazon.com/cloudshell/) to deploy the SAM template, you'll need to check which version of Python is installed. You can do so with `python -V`:
+
+```bash
+~$ python -V 
+Python 3.9.23
+```
+
+Given the example above, where CloudShell has Python 3.9.23 installed, you would need to update the template to use the `python3.9` runtime in the template using the `sed` instructions provided. 
+
+For local testing, you will need to have boto3. The development requirements are in the `pyproject.toml` file and can be installed using `pip` or `uv` according to your development preferences.  
 
 ## References
 

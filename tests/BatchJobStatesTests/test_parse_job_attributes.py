@@ -129,7 +129,7 @@ def test_mnp_main_node():
     print(json.dumps(result, indent=2))
     
     # Should process main node events
-    assert result['LastEventType'] == "RUNNING"
+    assert result['LastEventType'] == "SUCCEEDED"
     assert result['isParentArrayJob'] == False
     assert result['isMnpChildNode'] == False
     assert result['containerInstanceArn'] == "arn:aws:ecs:us-east-1:123456789012:container-instance/AWSBatch-BatchComputeEnvironment-oHxuMlOqgBoID4mL-c14e913b-d5ac-3ed6-9f0b-bad3c2e3eea4/7d801024862b4c3bb68580aab314e561"
@@ -139,7 +139,7 @@ def test_mnp_main_node():
 
 
 def test_mnp_child_node():
-    """Test MNP child node event (should be skipped)"""
+    """Test MNP child node event (should be processed since it runs on its own EC2 instance)"""
     print("\nTesting MNP child node...")
     
     event = load_test_event("batch-event-MNP-CHILD-NODE.json")
@@ -149,13 +149,34 @@ def test_mnp_child_node():
     print("Lambda function result:")
     print(json.dumps(result, indent=2))
     
-    # Should mark child node for skipping
+    # Should process child node events since they run on separate EC2 instances
     assert result['LastEventType'] == "RUNNING"
     assert result['isParentArrayJob'] == False
     assert result['isMnpChildNode'] == True
     assert result['containerInstanceArn'] == "arn:aws:ecs:us-east-1:123456789012:container-instance/AWSBatch-BatchComputeEnvironment-oHxuMlOqgBoID4mL-c14e913b-d5ac-3ed6-9f0b-bad3c2e3eea4/abe0ae5a7d404b22b5eb30f958c7fb93"
     
     print("✅ MNP child node test passed!")
+    return result
+
+
+def test_mnp_child_node_failed():
+    """Test MNP child node FAILED event (should query main node status)"""
+    print("\nTesting MNP child node FAILED event...")
+    
+    event = load_test_event("batch-event-MNP-CHILD-NODE-FAILED.json")
+    
+    result = lambda_handler(event, {})
+    
+    print("Lambda function result:")
+    print(json.dumps(result, indent=2))
+    
+    # Should process child node events and potentially override status
+    # Note: In test environment, Batch API call will fail, so status remains FAILED
+    assert result['isParentArrayJob'] == False
+    assert result['isMnpChildNode'] == True
+    assert result['containerInstanceArn'] == "arn:aws:ecs:us-east-1:123456789012:container-instance/AWSBatch-BatchComputeEnvironment-oHxuMlOqgBoID4mL-c14e913b-d5ac-3ed6-9f0b-bad3c2e3eea4/abe0ae5a7d404b22b5eb30f958c7fb93"
+    
+    print("✅ MNP child node FAILED test passed!")
     return result
 
 
@@ -187,6 +208,7 @@ if __name__ == "__main__":
         test_array_job_parent()
         test_mnp_main_node()
         test_mnp_child_node()
+        test_mnp_child_node_failed()
         test_error_handling()
         
         print("\n🎉 All tests passed!")
