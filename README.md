@@ -83,11 +83,13 @@ aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names "YOUR_AS
 
 To run the serverless application you need to install the latest versions of the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and the [SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html). 
 
-We have configured the template to use Lambda supported runtime Python 3.12. To use other Python versions, modify the `template.yaml` file and replace the Lambda functions runtime from `python3.12` to your target version. An example using `sed` to change the version to the supported runtime `python3.11` can be done  with the following command in the repository directory:
+
+You will also need Python version 3.12. To use other Python versions, modify the `template.yaml` and `pyprojecy.toml` files to replace the Lambda function runtime and the project requirements to your target version. An example using `sed` to change the version to the supported runtime `python3.9` can be done  with the following command in the repository directory:
 
 
 ```bash
-sed -i 's/3\.12/3\.11/g' template.yaml
+sed -i 's/3\.12/3\.9/g' template.yaml
+sed -i 's/3\.12/3\.9/g' pyproject.toml
 ```
 
 If you plan to use [AWS CloudShell](https://aws.amazon.com/cloudshell/) to deploy the SAM template, you'll need to check which version of Python is installed. You can do so with `python -V`:
@@ -97,9 +99,9 @@ If you plan to use [AWS CloudShell](https://aws.amazon.com/cloudshell/) to deplo
 Python 3.9.23
 ```
 
-Given the example above, where CloudShell has Python 3.9.23 installed, you would need to update the template to use the `python3.9` runtime in the template using the `sed` instructions provided. 
+Given the example above, where CloudShell has Python 3.9.23 installed, you would need to update the `template.yaml` and `pyprojecy.toml` files to use the Python 3.9 runtime in the template using the `sed` instructions provided. 
 
-For local testing, you will need to have boto3. The development requirements are in the `pyproject.toml` file and can be installed using `pip` or `uv` according to your development preferences.  
+For local testing, you will need to have `boto3` Python package installed. The development requirements are in the `pyproject.toml` file and can be installed using `pip` or `uv` according to your development preferences. We recommend doing so with a Python virtual environment.   
 
 ## References
 
