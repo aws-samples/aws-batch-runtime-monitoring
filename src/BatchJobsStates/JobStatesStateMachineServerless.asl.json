@@ -12,7 +12,8 @@
         "JobName.$": "$.detail.jobName",
         "JobDefinition.$": "$.detail.jobDefinition",
         "LastEventType.$": "$.detail.status",
-        "LastEventTime.$": "$.time"
+        "LastEventTime.$": "$.time",
+        "OriginalEvent.$": "$"
       }
     },
     "Check Job State": {
@@ -47,7 +48,7 @@
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
         "FunctionName": "${ParseJobPropertiesFunction}",
-        "Payload.$": "$.Execution.Input"
+        "Payload.$": "$.OriginalEvent"
       },
       "Retry": [
         {
@@ -81,6 +82,17 @@
           "Variable": "$.isParentArrayJob",
           "BooleanEquals": true,
           "Next": "Skip Event"
+        }
+      ],
+      "Default": "Check If MNP Child Node"
+    },
+    "Check If MNP Child Node": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.isMnpChildNode",
+          "BooleanEquals": true,
+          "Next": "Check Container Instance ARN"
         }
       ],
       "Default": "Check Container Instance ARN"
