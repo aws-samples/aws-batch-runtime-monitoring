@@ -14,10 +14,9 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: >
+Description: |
   Collect metrics from AWS Batch, ECS and EC2 and display them in CloudWatch
 
 Resources:
@@ -41,10 +40,10 @@ Resources:
       SSESpecification:
         SSEEnabled: true
       PointInTimeRecoverySpecification:
-         PointInTimeRecoveryEnabled: true
+        PointInTimeRecoveryEnabled: true
       Tags:
-      - Key: "Application"
-        Value: "BatchMetricsDashboards"
+        - Key: Application
+          Value: BatchMetricsDashboards
 
   # ------------------------------------------------------
 
@@ -60,7 +59,6 @@ Resources:
   ECSRegistrationsServerless:
     Type: AWS::Serverless::StateMachine
     Properties:
-      DefinitionUri: src/ECSInstancesRegistration/ECSInstancesRegistrationStateMachineServerless.asl.json
       DefinitionSubstitutions:
         ECSRegistrationTable: !Ref ECSInstancesMetadataTableServerless
         SQSMetricsQueue: !Ref QueueInstanceRegistration
@@ -72,19 +70,19 @@ Resources:
       Events:
         ECSCloudTrail:
           Type: CloudWatchEvent
-          Description: "Capture ECS instances registration and deregistration"
+          Description: Capture ECS instances registration and deregistration
           Properties:
             Pattern:
               detail-type:
-              - 'AWS API Call via CloudTrail'
+                - AWS API Call via CloudTrail
               source:
-              - 'aws.ecs'
+                - aws.ecs
               detail:
                 eventName:
-                - 'RegisterContainerInstance'
-                - 'DeregisterContainerInstance'
+                  - RegisterContainerInstance
+                  - DeregisterContainerInstance
                 eventSource:
-                - 'ecs.amazonaws.com'
+                  - ecs.amazonaws.com
       Policies:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt QueueInstanceRegistration.QueueName
@@ -96,19 +94,20 @@ Resources:
           - CloudWatchLogsLogGroup:
               LogGroupArn: !GetAtt ECSRegistrationsLogGroup.Arn
         IncludeExecutionData: true
-        Level: 'ALL'
+        Level: ALL
+      DefinitionUri: src/ECSInstancesRegistration/ECSInstancesRegistrationStateMachineServerless.asl.json
 
   ECSRegistrationsLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-       RetentionInDays: 7
+      RetentionInDays: 7
 
   ECSMetricToCWFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: src/ECSInstancesRegistration/MetricToCW
       Handler: app.lambda_handler
-      Runtime: python3.9
+      Runtime: python3.12
       ReservedConcurrentExecutions: 30
       Policies:
         - SQSPollerPolicy:
@@ -120,7 +119,7 @@ Resources:
       Events:
         SQSPollInstanceRegistration:
           Type: SQS
-          Description: "Process SQS registration to CW EMF"
+          Description: Process SQS registration to CW EMF
           Properties:
             Queue: !GetAtt QueueInstanceRegistration.Arn
             BatchSize: 1
@@ -138,7 +137,6 @@ Resources:
   ECSRunTaskStateMachineServerless:
     Type: AWS::Serverless::StateMachine
     Properties:
-      DefinitionUri: src/ECSRunTask/ECSRunTaskStateMachineServerless.asl.json
       DefinitionSubstitutions:
         ECSRegistrationTable: !Ref ECSInstancesMetadataTableServerless
         SQSMetricsQueue: !Ref QueueRunTask
@@ -150,18 +148,18 @@ Resources:
       Events:
         ECSCloudTrail:
           Type: CloudWatchEvent
-          Description: "Capture ECS RunTask calls for AWS Batch jobs that failed to place"
+          Description: Capture ECS RunTask calls for AWS Batch jobs that failed to place
           Properties:
             Pattern:
               detail-type:
-              - 'AWS API Call via CloudTrail'
+                - AWS API Call via CloudTrail
               source:
-              - 'aws.ecs'
+                - aws.ecs
               detail:
                 eventName:
-                - 'RunTask'
+                  - RunTask
                 eventSource:
-                - 'ecs.amazonaws.com'
+                  - ecs.amazonaws.com
       Policies:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt QueueRunTask.QueueName
@@ -173,19 +171,20 @@ Resources:
           - CloudWatchLogsLogGroup:
               LogGroupArn: !GetAtt ECSRunTaskLogGroup.Arn
         IncludeExecutionData: true
-        Level: 'ALL'
+        Level: ALL
+      DefinitionUri: src/ECSRunTask/ECSRunTaskStateMachineServerless.asl.json
 
   ECSRunTaskLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-       RetentionInDays: 7
+      RetentionInDays: 7
 
   RunTaskMetricToCWFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: src/ECSRunTask/RunTaskToCW
       Handler: app.lambda_handler
-      Runtime: python3.9
+      Runtime: python3.12
       ReservedConcurrentExecutions: 30
       Policies:
         - SQSPollerPolicy:
@@ -197,7 +196,7 @@ Resources:
       Events:
         SQSPollInstanceRegistration:
           Type: SQS
-          Description: "Process SQS registration to CW EMF"
+          Description: Process SQS registration to CW EMF
           Properties:
             Queue: !GetAtt QueueRunTask.Arn
             BatchSize: 1
@@ -217,7 +216,6 @@ Resources:
   ECSTaskEventsStateMachineServerless:
     Type: AWS::Serverless::StateMachine
     Properties:
-      DefinitionUri: src/ECSRunTask/ECSTaskEventsStateMachineServerless.asl.json
       DefinitionSubstitutions:
         ECSRegistrationTable: !Ref ECSInstancesMetadataTableServerless
         SQSMetricsQueue: !Ref QueueTaskEvents
@@ -229,13 +227,15 @@ Resources:
       Events:
         ECSCloudwatchEventSource:
           Type: CloudWatchEvent
-          Description: "Capture ECS task state change events for successfully placed AWS Batch jobs"
+          Description:
+            Capture ECS task state change events for successfully placed AWS
+            Batch jobs
           Properties:
             Pattern:
               detail-type:
-              - 'ECS Task State Change'
+                - ECS Task State Change
               source:
-              - 'aws.ecs'
+                - aws.ecs
 
       Policies:
         - SQSSendMessagePolicy:
@@ -248,19 +248,20 @@ Resources:
           - CloudWatchLogsLogGroup:
               LogGroupArn: !GetAtt ECSTaskEventsLogGroup.Arn
         IncludeExecutionData: true
-        Level: 'ALL'
+        Level: ALL
+      DefinitionUri: src/ECSRunTask/ECSTaskEventsStateMachineServerless.asl.json
 
   ECSTaskEventsLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-       RetentionInDays: 7
+      RetentionInDays: 7
 
   QueueTaskEventsMetricToCWFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: src/ECSRunTask/RunTaskToCW
       Handler: app.lambda_handler
-      Runtime: python3.9
+      Runtime: python3.12
       ReservedConcurrentExecutions: 30
       Policies:
         - SQSPollerPolicy:
@@ -272,7 +273,7 @@ Resources:
       Events:
         SQSPollTaskEvents:
           Type: SQS
-          Description: "Process SQS task state change events to CW EMF"
+          Description: Process SQS task state change events to CW EMF
           Properties:
             Queue: !GetAtt QueueTaskEvents.Arn
             BatchSize: 1
@@ -289,13 +290,29 @@ Resources:
       KmsMasterKeyId: alias/aws/sqs
       VisibilityTimeout: 12 # 5 more seconds than the lambda timeout
 
+  ParseJobPropertiesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/BatchJobsStates/ParseJobProperties
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Timeout: 30
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - batch:DescribeJobs
+              Resource: "*"
+      Tags:
+        Application: BatchMetricsDashboards
+
   JobStatesStateMachineServerless:
     Type: AWS::Serverless::StateMachine
     Properties:
-      DefinitionUri: src/BatchJobsStates/JobStatesStateMachineServerless.asl.json
       DefinitionSubstitutions:
         ECSRegistrationTable: !Ref ECSInstancesMetadataTableServerless
         SQSMetricsQueue: !Ref QueueJobsStates
+        ParseJobPropertiesFunction: !Ref ParseJobPropertiesFunction
       Tags:
         Application: BatchMetricsDashboards
       Type: EXPRESS
@@ -304,37 +321,40 @@ Resources:
       Events:
         CloudTrail:
           Type: CloudWatchEvent
-          Description: "Capture AWS Batch jobs states transitions"
+          Description: Capture AWS Batch jobs states transitions
           Properties:
             Pattern:
               detail-type:
-              - 'Batch Job State Change'
+                - Batch Job State Change
               source:
-              - 'aws.batch'
+                - aws.batch
       Policies:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt QueueJobsStates.QueueName
         - DynamoDBReadPolicy:
             TableName: !Ref ECSInstancesMetadataTableServerless
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ParseJobPropertiesFunction
         - CloudWatchLogsFullAccess
       Logging:
         Destinations:
           - CloudWatchLogsLogGroup:
               LogGroupArn: !GetAtt JobsStatesLogGroup.Arn
         IncludeExecutionData: true
-        Level: 'ALL'
+        Level: ALL
+      DefinitionUri: src/BatchJobsStates/JobStatesStateMachineServerless.asl.json
 
   JobsStatesLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-       RetentionInDays: 7
+      RetentionInDays: 7
 
   JobsStatesMetricToCWFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: src/BatchJobsStates/JobStatesToCW
       Handler: app.lambda_handler
-      Runtime: python3.9
+      Runtime: python3.12
       ReservedConcurrentExecutions: 70
       Policies:
         - SQSPollerPolicy:
@@ -346,7 +366,7 @@ Resources:
       Events:
         SQSPollInstanceRegistration:
           Type: SQS
-          Description: "Process SQS jobs states to CW EMF"
+          Description: Process SQS jobs states to CW EMF
           Properties:
             Queue: !GetAtt QueueJobsStates.Arn
             BatchSize: 1
@@ -364,7 +384,7 @@ Resources:
           - Effect: Allow
             Principal:
               Service: lambda.amazonaws.com
-            Action: "sts:AssumeRole"
+            Action: sts:AssumeRole
       Policies:
         - PolicyName: ASGMonitoringLogsPolicy
           PolicyDocument:
@@ -372,9 +392,9 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - "logs:CreateLogGroup"
-                  - "logs:CreateLogStream"
-                  - "logs:PutLogEvents"
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
                 Resource: "*"
         - PolicyName: ASGMonitoringASGPolicy
           PolicyDocument:
@@ -382,8 +402,8 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - "autoscaling:EnableMetricsCollection"
-                  - "autoscaling:DescribeAutoScalingGroups"
+                  - autoscaling:EnableMetricsCollection
+                  - autoscaling:DescribeAutoScalingGroups
                 Resource: "*"
 
   ASGMonitoringFunction:
@@ -392,7 +412,7 @@ Resources:
       CodeUri: src/ASGMonitoring
       Handler: app.lambda_handler
       Role: !GetAtt ASGMonitoringFunctionRole.Arn
-      Runtime: python3.9
+      Runtime: python3.12
       Timeout: 60
       MemorySize: 128
       ReservedConcurrentExecutions: 1
@@ -401,472 +421,472 @@ Resources:
       Events:
         ECSCloudTrail:
           Type: CloudWatchEvent
-          Description: "EventRule to capture ASGs creation"
+          Description: EventRule to capture ASGs creation
           Properties:
             Pattern:
               detail-type:
-              - 'AWS API Call via CloudTrail'
+                - AWS API Call via CloudTrail
               detail:
                 eventName:
-                - 'CreateAutoScalingGroup'
+                  - CreateAutoScalingGroup
                 eventSource:
-                - 'autoscaling.amazonaws.com'
+                  - autoscaling.amazonaws.com
   # ------------------------------------------------------
 
   # CloudWatch Dashboards --------------------------------
   BatchMetricsECSInstancesRegistration:
     Type: AWS::CloudWatch::Dashboard
     Properties:
-      DashboardName: !Join [ '-', [ !Ref AWS::Region, Batch-ECS-InstancesRegistration ] ]
-      DashboardBody:
-        !Sub
-          - |-
-            {
-                "start": "-PT3H",
-                "periodOverride": "inherit",
-                "widgets": [
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 6,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"RegisterContainerInstance\"', 'Sum', 60)", "id": "e1", "label": "" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "ECS Instances Registered - Availability Zones",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "Instances"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 0,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"RegisterContainerInstance\"', 'Sum', 60)", "id": "e1", "label": "" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "ECS Instances Registration - Instance Types",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "Instances"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 12,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,ECSCluster} MetricName=\"RegisterContainerInstance\"', 'Sum', 60)", "id": "e1", "label": "" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "ECS Instances Registration - ECS Cluster",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "Instances"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 6,
-                        "x": 12,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"DeregisterContainerInstance\"', 'Sum', 60)", "id": "e2", "label": "" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "ECS Instances Deregistered - Availability Zones",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "Instances"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 12,
-                        "x": 12,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,ECSCluster} MetricName=\"DeregisterContainerInstance\"', 'Sum', 60)", "id": "e2", "label": "" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "ECS Instances Deregistration - ECS Cluster",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "Instances"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 0,
-                        "x": 12,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"DeregisterContainerInstance\"', 'Sum', 60)", "id": "e2", "label": "" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "ECS Instances Deregistration - Instance Types",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "Instances"
-                                }
-                            },
-                            "liveData": true
-                        }
-                    }
-                ]
-            }
-          - {
-              DeployedRegion: !Ref "AWS::Region",
-            }
+      DashboardName: !Join
+        - "-"
+        - - !Ref AWS::Region
+          - Batch-ECS-InstancesRegistration
+      DashboardBody: !Sub
+        - |-
+          {
+              "start": "-PT3H",
+              "periodOverride": "inherit",
+              "widgets": [
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 6,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"RegisterContainerInstance\"', 'Sum', 60)", "id": "e1", "label": "" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "ECS Instances Registered - Availability Zones",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "Instances"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 0,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"RegisterContainerInstance\"', 'Sum', 60)", "id": "e1", "label": "" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "ECS Instances Registration - Instance Types",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "Instances"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 12,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,ECSCluster} MetricName=\"RegisterContainerInstance\"', 'Sum', 60)", "id": "e1", "label": "" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "ECS Instances Registration - ECS Cluster",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "Instances"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 6,
+                      "x": 12,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"DeregisterContainerInstance\"', 'Sum', 60)", "id": "e2", "label": "" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "ECS Instances Deregistered - Availability Zones",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "Instances"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 12,
+                      "x": 12,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,ECSCluster} MetricName=\"DeregisterContainerInstance\"', 'Sum', 60)", "id": "e2", "label": "" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "ECS Instances Deregistration - ECS Cluster",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "Instances"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 0,
+                      "x": 12,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"DeregisterContainerInstance\"', 'Sum', 60)", "id": "e2", "label": "" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "ECS Instances Deregistration - Instance Types",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "Instances"
+                              }
+                          },
+                          "liveData": true
+                      }
+                  }
+              ]
+          }
+        - DeployedRegion: !Ref AWS::Region
 
   BatchMetricsJobsPlacement:
     Type: AWS::CloudWatch::Dashboard
     Properties:
-      DashboardName: !Join [ '-', [ !Ref AWS::Region, Batch-Jobs-Placement ] ]
-      DashboardBody:
-        !Sub
-          - |-
-            {
-                "start": "-PT3H",
-                "periodOverride": "inherit",
-                "widgets": [
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 8,
-                        "x": 12,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"RunTask Call\"', 'Sum', 60)", "id": "e1" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "RunTask Calls - Job Queue",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "RunTask API Calls"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 8,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,ECSCluster} MetricName=\"RunTask Call\"', 'Sum', 60)", "id": "e1" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "RunTask Calls - ECS Cluster / Batch Compute Environment",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "RunTask API Calls"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 1,
-                        "width": 24,
-                        "y": 0,
-                        "x": 0,
-                        "type": "text",
-                        "properties": {
-                            "markdown": "# ECS RunTask API Calls & Placed / Second\n"
-                        }
-                    },
-                    {
-                        "height": 1,
-                        "width": 24,
-                        "y": 14,
-                        "x": 0,
-                        "type": "text",
-                        "properties": {
-                            "markdown": "# Placed Jobs through RunTask API Call"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 15,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"Jobs Placed\"', 'Sum', 60)", "id": "e1" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "Jobs Placed - Instance Type",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "RunTask API Calls - Placed"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 15,
-                        "x": 12,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"Jobs Placed\"', 'Sum', 60)", "id": "e1" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "Jobs Placed - Availability Zone",
-                            "yAxis": {
-                                "left": {
-                                    "label": "RunTask API Calls - Placed",
-                                    "showUnits": false
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 21,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,ECSCluster} MetricName=\"Jobs Placed\"', 'Sum', 60)", "id": "e1" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "Jobs Placed - ECS Cluster / Batch Compute Environment",
-                            "yAxis": {
-                                "left": {
-                                    "label": "RunTask API Calls - Placed",
-                                    "showUnits": false
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            }
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 21,
-                        "x": 12,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"Jobs Placed\"', 'Sum', 60)", "id": "e1" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "Jobs Placed - Job Queue",
-                            "yAxis": {
-                                "left": {
-                                    "label": "RunTask API Calls - Placed",
-                                    "showUnits": false
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 3,
-                        "width": 24,
-                        "y": 4,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"Jobs Placed\"', 'Sum', 60)", "id": "e1", "visible": false } ],
-                                [ { "expression": "e1/PERIOD(TIME_SERIES(SUM(SUM(e1))))", "label": "RunTask Call Jobs Placed / second", "id": "e3" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "Total Jobs Placed / Second",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "RunTask API Calls / second"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 1,
-                        "width": 24,
-                        "y": 7,
-                        "x": 0,
-                        "type": "text",
-                        "properties": {
-                            "markdown": "# ECS RunTask API Calls"
-                        }
-                    },
-                    {
-                        "height": 3,
-                        "width": 24,
-                        "y": 1,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"RunTask Call\"', 'Sum', 60)", "id": "e1", "visible": false } ],
-                                [ { "expression": "e1/PERIOD(TIME_SERIES(SUM(SUM(e1))))", "label": "RunTask Call / second", "id": "e3" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "Total RunTask Calls / Second",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "RunTask API Calls / second"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    }
-                ]
-            }
-          - {
-              DeployedRegion: !Ref "AWS::Region",
-            }
+      DashboardName: !Join
+        - "-"
+        - - !Ref AWS::Region
+          - Batch-Jobs-Placement
+      DashboardBody: !Sub
+        - |-
+          {
+              "start": "-PT3H",
+              "periodOverride": "inherit",
+              "widgets": [
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 8,
+                      "x": 12,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"RunTask Call\"', 'Sum', 60)", "id": "e1" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "RunTask Calls - Job Queue",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "RunTask API Calls"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 8,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,ECSCluster} MetricName=\"RunTask Call\"', 'Sum', 60)", "id": "e1" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "RunTask Calls - ECS Cluster / Batch Compute Environment",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "RunTask API Calls"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 1,
+                      "width": 24,
+                      "y": 0,
+                      "x": 0,
+                      "type": "text",
+                      "properties": {
+                          "markdown": "# ECS RunTask API Calls & Placed / Second\n"
+                      }
+                  },
+                  {
+                      "height": 1,
+                      "width": 24,
+                      "y": 14,
+                      "x": 0,
+                      "type": "text",
+                      "properties": {
+                          "markdown": "# Placed Jobs through RunTask API Call"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 15,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"Jobs Placed\"', 'Sum', 60)", "id": "e1" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "Jobs Placed - Instance Type",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "RunTask API Calls - Placed"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 15,
+                      "x": 12,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"Jobs Placed\"', 'Sum', 60)", "id": "e1" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "Jobs Placed - Availability Zone",
+                          "yAxis": {
+                              "left": {
+                                  "label": "RunTask API Calls - Placed",
+                                  "showUnits": false
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 21,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,ECSCluster} MetricName=\"Jobs Placed\"', 'Sum', 60)", "id": "e1" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "Jobs Placed - ECS Cluster / Batch Compute Environment",
+                          "yAxis": {
+                              "left": {
+                                  "label": "RunTask API Calls - Placed",
+                                  "showUnits": false
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          }
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 21,
+                      "x": 12,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"Jobs Placed\"', 'Sum', 60)", "id": "e1" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "Jobs Placed - Job Queue",
+                          "yAxis": {
+                              "left": {
+                                  "label": "RunTask API Calls - Placed",
+                                  "showUnits": false
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 3,
+                      "width": 24,
+                      "y": 4,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"Jobs Placed\"', 'Sum', 60)", "id": "e1", "visible": false } ],
+                              [ { "expression": "e1/PERIOD(TIME_SERIES(SUM(SUM(e1))))", "label": "RunTask Call Jobs Placed / second", "id": "e3" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "Total Jobs Placed / Second",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "RunTask API Calls / second"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 1,
+                      "width": 24,
+                      "y": 7,
+                      "x": 0,
+                      "type": "text",
+                      "properties": {
+                          "markdown": "# ECS RunTask API Calls"
+                      }
+                  },
+                  {
+                      "height": 3,
+                      "width": 24,
+                      "y": 1,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"RunTask Call\"', 'Sum', 60)", "id": "e1", "visible": false } ],
+                              [ { "expression": "e1/PERIOD(TIME_SERIES(SUM(SUM(e1))))", "label": "RunTask Call / second", "id": "e3" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "Total RunTask Calls / Second",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "RunTask API Calls / second"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  }
+              ]
+          }
+        - DeployedRegion: !Ref AWS::Region
 
   # ------------------------------------------------------
 
@@ -879,1010 +899,987 @@ Resources:
   BatchMetricsJobsStates:
     Type: AWS::CloudWatch::Dashboard
     Properties:
-      DashboardName: !Join [ '-', [ !Ref AWS::Region, Batch-Jobs-States ] ]
-      DashboardBody:
-        !Sub
-          - |-
-            {
-                "start": "-PT3H",
-                "periodOverride": "inherit",
-                "widgets": [
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 14,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"RUNNING\"', 'Sum', 60)", "id": "e5" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "RUNNING - Availability Zone"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 14,
-                        "x": 12,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"SUCCEEDED\"', 'Sum', 60)", "id": "e7" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "SUCCEEDED - By Availability Zone"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 14,
-                        "x": 18,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"FAILED\"', 'Sum', 60)", "id": "e6" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "FAILED - By Availability Zone"
-                        }
-                    },
-                    {
-                        "height": 1,
-                        "width": 24,
-                        "y": 13,
-                        "x": 0,
-                        "type": "text",
-                        "properties": {
-                            "markdown": "# Jobs Running and End State per Availability Zone\n"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 24,
-                        "y": 0,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"SUBMITTED\"', 'Sum', 60)", "id": "e1", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"PENDING\"', 'Sum', 60)", "id": "e2", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"RUNNABLE\"', 'Sum', 60)", "id": "e3", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"STARTING\"', 'Sum', 60)", "id": "e4", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"RUNNING\"', 'Sum', 60)", "id": "e5", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"SUCCEEDED\"', 'Sum', 60)", "id": "e6", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"FAILED\"', 'Sum', 60)", "id": "e7", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "Jobs States Transitions"
-                        }
-                    },
-                    {
-                        "height": 1,
-                        "width": 24,
-                        "y": 27,
-                        "x": 0,
-                        "type": "text",
-                        "properties": {
-                            "markdown": "# Jobs Running and End State per Batch Job Queue\n"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 21,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,ECSCluster} MetricName=\"RUNNING\"', 'Sum', 60)", "id": "e5" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "RUNNING - Batch Compute Environment"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 21,
-                        "x": 18,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,ECSCluster} MetricName=\"FAILED\"', 'Sum', 60)", "id": "e6" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "FAILED - Batch Compute Environment"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 21,
-                        "x": 12,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,ECSCluster} MetricName=\"SUCCEEDED\"', 'Sum', 60)", "id": "e7" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "SUCCEEDED - Batch Compute Environment"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 7,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"RUNNING\"', 'Sum', 60)", "id": "e5" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "RUNNING - EC2 Instance Type"
-                        }
-                    },
-                    {
-                        "height": 1,
-                        "width": 24,
-                        "y": 6,
-                        "x": 0,
-                        "type": "text",
-                        "properties": {
-                            "markdown": "# Jobs Running and End State per EC2 Instance Type"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 7,
-                        "x": 12,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"SUCCEEDED\"', 'Sum', 60)", "id": "e6" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "SUCCEEDED - EC2 Instance Type"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 7,
-                        "x": 18,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"FAILED\"', 'Sum', 60)", "id": "e7" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "FAILED - EC2 Instance Type"
-                        }
-                    },
-                    {
-                        "height": 1,
-                        "width": 24,
-                        "y": 20,
-                        "x": 0,
-                        "type": "text",
-                        "properties": {
-                            "markdown": "# Jobs Running and End State per Batch Compute Environment\n"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 34,
-                        "x": 12,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"STARTING\"', 'Sum', 60)", "id": "e4" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "Jobs STARTING - Job Queue",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "Jobs"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 28,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"RUNNING\"', 'Sum', 60)", "id": "e2" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "Jobs RUNNING - Job Queue",
-                            "yAxis": {
-                                "left": {
-                                    "label": "Jobs",
-                                    "showUnits": false
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 34,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"RUNNABLE\"', 'Sum', 60)", "id": "e4" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "Jobs States RUNNABLE - Job Queue",
-                            "yAxis": {
-                                "left": {
-                                    "label": "Jobs",
-                                    "showUnits": false
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 34,
-                        "x": 18,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"PENDING\"', 'Sum', 60)", "id": "e2" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "Jobs PENDING - Job Queue",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "Jobs"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 28,
-                        "x": 12,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"SUCCEEDED\"', 'Sum', 60)", "id": "e6" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "Jobs SUCCEEDED - Job Queue",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "Jobs"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 28,
-                        "x": 18,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"FAILED\"', 'Sum', 60)", "id": "e7" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "Jobs FAILED - Job Queue",
-                            "yAxis": {
-                                "left": {
-                                    "label": "Jobs",
-                                    "showUnits": false
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 41,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"RUNNING\"', 'Sum', 60)", "id": "e5" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "RUNNING - Job Definition",
-                            "yAxis": {
-                                "left": {
-                                    "label": "Jobs",
-                                    "showUnits": false
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 1,
-                        "width": 24,
-                        "y": 40,
-                        "x": 0,
-                        "type": "text",
-                        "properties": {
-                            "markdown": "# Jobs States per Job Definition\n"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 41,
-                        "x": 12,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"SUCCEEDED\"', 'Sum', 60)", "id": "e5" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "SUCCEEDED - Job Definition",
-                            "yAxis": {
-                                "left": {
-                                    "label": "Jobs",
-                                    "showUnits": false
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 41,
-                        "x": 18,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"FAILED\"', 'Sum', 60)", "id": "e5" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "FAILED - Job Definition",
-                            "yAxis": {
-                                "left": {
-                                    "label": "Jobs",
-                                    "showUnits": false
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 47,
-                        "x": 18,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"STARTING\"', 'Sum', 60)", "id": "e5" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "STARTING - Job Definition",
-                            "yAxis": {
-                                "left": {
-                                    "label": "Jobs",
-                                    "showUnits": false
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 12,
-                        "y": 47,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"RUNNABLE\"', 'Sum', 60)", "id": "e5" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "RUNNABLE - Job Definition",
-                            "yAxis": {
-                                "left": {
-                                    "label": "Jobs",
-                                    "showUnits": false
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 47,
-                        "x": 12,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"PENDING\"', 'Sum', 60)", "id": "e5" } ]
-                            ],
-                            "period": 60,
-                            "stat": "Sum",
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "title": "PENDING - Job Definition",
-                            "yAxis": {
-                                "left": {
-                                    "label": "Jobs",
-                                    "showUnits": false
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": true
-                        }
-                    }
-                ]
-            }
-          - {
-              DeployedRegion: !Ref "AWS::Region",
-            }
+      DashboardName: !Join
+        - "-"
+        - - !Ref AWS::Region
+          - Batch-Jobs-States
+      DashboardBody: !Sub
+        - |-
+          {
+              "start": "-PT3H",
+              "periodOverride": "inherit",
+              "widgets": [
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 14,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"RUNNING\"', 'Sum', 60)", "id": "e5" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "RUNNING - Availability Zone"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 14,
+                      "x": 12,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"SUCCEEDED\"', 'Sum', 60)", "id": "e7" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "SUCCEEDED - By Availability Zone"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 14,
+                      "x": 18,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,AvailabilityZone} MetricName=\"FAILED\"', 'Sum', 60)", "id": "e6" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "FAILED - By Availability Zone"
+                      }
+                  },
+                  {
+                      "height": 1,
+                      "width": 24,
+                      "y": 13,
+                      "x": 0,
+                      "type": "text",
+                      "properties": {
+                          "markdown": "# Jobs Running and End State per Availability Zone\n"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 24,
+                      "y": 0,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"SUBMITTED\"', 'Sum', 60)", "id": "e1", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"PENDING\"', 'Sum', 60)", "id": "e2", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"RUNNABLE\"', 'Sum', 60)", "id": "e3", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"STARTING\"', 'Sum', 60)", "id": "e4", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"RUNNING\"', 'Sum', 60)", "id": "e5", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"SUCCEEDED\"', 'Sum', 60)", "id": "e6", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ],
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobState} MetricName=\"FAILED\"', 'Sum', 60)", "id": "e7", "label": "\u0024{PROP(\u0027MetricName\u0027)}" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "Jobs States Transitions"
+                      }
+                  },
+                  {
+                      "height": 1,
+                      "width": 24,
+                      "y": 27,
+                      "x": 0,
+                      "type": "text",
+                      "properties": {
+                          "markdown": "# Jobs Running and End State per Batch Job Queue\n"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 21,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,ECSCluster} MetricName=\"RUNNING\"', 'Sum', 60)", "id": "e5" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "RUNNING - Batch Compute Environment"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 21,
+                      "x": 18,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,ECSCluster} MetricName=\"FAILED\"', 'Sum', 60)", "id": "e6" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "FAILED - Batch Compute Environment"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 21,
+                      "x": 12,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,ECSCluster} MetricName=\"SUCCEEDED\"', 'Sum', 60)", "id": "e7" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "SUCCEEDED - Batch Compute Environment"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 7,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"RUNNING\"', 'Sum', 60)", "id": "e5" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "RUNNING - EC2 Instance Type"
+                      }
+                  },
+                  {
+                      "height": 1,
+                      "width": 24,
+                      "y": 6,
+                      "x": 0,
+                      "type": "text",
+                      "properties": {
+                          "markdown": "# Jobs Running and End State per EC2 Instance Type"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 7,
+                      "x": 12,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"SUCCEEDED\"', 'Sum', 60)", "id": "e6" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "SUCCEEDED - EC2 Instance Type"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 7,
+                      "x": 18,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,InstanceType} MetricName=\"FAILED\"', 'Sum', 60)", "id": "e7" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "FAILED - EC2 Instance Type"
+                      }
+                  },
+                  {
+                      "height": 1,
+                      "width": 24,
+                      "y": 20,
+                      "x": 0,
+                      "type": "text",
+                      "properties": {
+                          "markdown": "# Jobs Running and End State per Batch Compute Environment\n"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 34,
+                      "x": 12,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"STARTING\"', 'Sum', 60)", "id": "e4" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "Jobs STARTING - Job Queue",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "Jobs"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 28,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"RUNNING\"', 'Sum', 60)", "id": "e2" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "Jobs RUNNING - Job Queue",
+                          "yAxis": {
+                              "left": {
+                                  "label": "Jobs",
+                                  "showUnits": false
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 34,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"RUNNABLE\"', 'Sum', 60)", "id": "e4" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "Jobs States RUNNABLE - Job Queue",
+                          "yAxis": {
+                              "left": {
+                                  "label": "Jobs",
+                                  "showUnits": false
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 34,
+                      "x": 18,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"PENDING\"', 'Sum', 60)", "id": "e2" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "Jobs PENDING - Job Queue",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "Jobs"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 28,
+                      "x": 12,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"SUCCEEDED\"', 'Sum', 60)", "id": "e6" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "Jobs SUCCEEDED - Job Queue",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "Jobs"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 28,
+                      "x": 18,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobQueue} MetricName=\"FAILED\"', 'Sum', 60)", "id": "e7" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "Jobs FAILED - Job Queue",
+                          "yAxis": {
+                              "left": {
+                                  "label": "Jobs",
+                                  "showUnits": false
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 41,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"RUNNING\"', 'Sum', 60)", "id": "e5" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "RUNNING - Job Definition",
+                          "yAxis": {
+                              "left": {
+                                  "label": "Jobs",
+                                  "showUnits": false
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 1,
+                      "width": 24,
+                      "y": 40,
+                      "x": 0,
+                      "type": "text",
+                      "properties": {
+                          "markdown": "# Jobs States per Job Definition\n"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 41,
+                      "x": 12,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"SUCCEEDED\"', 'Sum', 60)", "id": "e5" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "SUCCEEDED - Job Definition",
+                          "yAxis": {
+                              "left": {
+                                  "label": "Jobs",
+                                  "showUnits": false
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 41,
+                      "x": 18,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"FAILED\"', 'Sum', 60)", "id": "e5" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "FAILED - Job Definition",
+                          "yAxis": {
+                              "left": {
+                                  "label": "Jobs",
+                                  "showUnits": false
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 47,
+                      "x": 18,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"STARTING\"', 'Sum', 60)", "id": "e5" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "STARTING - Job Definition",
+                          "yAxis": {
+                              "left": {
+                                  "label": "Jobs",
+                                  "showUnits": false
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 12,
+                      "y": 47,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"RUNNABLE\"', 'Sum', 60)", "id": "e5" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "RUNNABLE - Job Definition",
+                          "yAxis": {
+                              "left": {
+                                  "label": "Jobs",
+                                  "showUnits": false
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 47,
+                      "x": 12,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWSBatchMetrics,JobDefinition} MetricName=\"PENDING\"', 'Sum', 60)", "id": "e5" } ]
+                          ],
+                          "period": 60,
+                          "stat": "Sum",
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "title": "PENDING - Job Definition",
+                          "yAxis": {
+                              "left": {
+                                  "label": "Jobs",
+                                  "showUnits": false
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": true
+                      }
+                  }
+              ]
+          }
+        - DeployedRegion: !Ref AWS::Region
 
   # # ------------------------------------------------------
 
   ECSClusterUtilization:
     Type: AWS::CloudWatch::Dashboard
     Properties:
-      DashboardName: !Join [ '-', [ !Ref AWS::Region, Batch-EC2-Capacity ] ]
-      DashboardBody:
-        !Sub
-          - |-
-            {
-                "widgets": [
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 15,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWS/ECS,ClusterName} MetricName=\"CPUUtilization\"', 'Average', 60)", "label": "", "id": "e2" } ]
-                            ],
-                            "view": "timeSeries",
-                            "stacked": false,
-                            "region": "${DeployedRegion}",
-                            "period": 300,
-                            "yAxis": {
-                                "left": {
-                                    "label": "",
-                                    "showUnits": false,
-                                    "max": 100,
-                                    "min": 0
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "title": "CPU Utilization per ASG",
-                            "liveData": true,
-                            "stat": "Average"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 15,
-                        "x": 6,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWS/ECS,ClusterName} MetricName=\"CPUReservation\"', 'Average', 60)", "label": "", "id": "e2" } ]
-                            ],
-                            "view": "timeSeries",
-                            "stacked": false,
-                            "region": "${DeployedRegion}",
-                            "period": 300,
-                            "yAxis": {
-                                "left": {
-                                    "label": "",
-                                    "showUnits": false,
-                                    "max": 100,
-                                    "min": 0
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "title": "CPU Reservation per ECS Cluster",
-                            "liveData": true,
-                            "stat": "Average"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 15,
-                        "x": 12,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWS/ECS,ClusterName} MetricName=\"MemoryUtilization\"', 'Average', 60)", "label": "", "id": "e2" } ]
-                            ],
-                            "view": "timeSeries",
-                            "stacked": false,
-                            "region": "${DeployedRegion}",
-                            "period": 300,
-                            "yAxis": {
-                                "left": {
-                                    "label": "",
-                                    "showUnits": false,
-                                    "max": 100,
-                                    "min": 0
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "title": "MemoryUtilization per ECS Cluster",
-                            "liveData": true,
-                            "stat": "Average"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 6,
-                        "y": 15,
-                        "x": 18,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWS/ECS,ClusterName} MetricName=\"MemoryReservation\"', 'Average', 60)", "label": "", "id": "e2" } ]
-                            ],
-                            "view": "timeSeries",
-                            "stacked": false,
-                            "region": "${DeployedRegion}",
-                            "period": 300,
-                            "yAxis": {
-                                "left": {
-                                    "label": "",
-                                    "showUnits": false,
-                                    "max": 100,
-                                    "min": 0
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "title": "Memory Reservation per ECS Cluster",
-                            "liveData": true,
-                            "stat": "Average"
-                        }
-                    },
-                    {
-                        "height": 6,
-                        "width": 24,
-                        "y": 0,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWS/AutoScaling,AutoScalingGroupName} MetricName=\"GroupInServiceInstances\"', 'Sum', 60)", "label": "", "id": "e1", "stat": "Sum" } ]
-                            ],
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "stat": "Sum",
-                            "period": 300,
-                            "title": "AutoScaling Groups Total In-Service Instances",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "Instances"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": false
-                        }
-                    },
-                    {
-                        "height": 9,
-                        "width": 12,
-                        "y": 6,
-                        "x": 12,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWS/AutoScaling,AutoScalingGroupName} MetricName=\"GroupDesiredCapacity\"', 'Sum', 60)", "label": "", "id": "e1", "stat": "Sum" } ]
-                            ],
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "stat": "Sum",
-                            "period": 300,
-                            "title": "AutoScaling Groups Desired Capacity",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "vCPUs"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": false
-                        }
-                    },
-                    {
-                        "height": 9,
-                        "width": 12,
-                        "y": 6,
-                        "x": 0,
-                        "type": "metric",
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWS/AutoScaling,AutoScalingGroupName} MetricName=\"GroupInServiceCapacity\"', 'Sum', 60)", "label": "", "id": "e1", "stat": "Sum" } ]
-                            ],
-                            "view": "timeSeries",
-                            "stacked": true,
-                            "region": "${DeployedRegion}",
-                            "stat": "Sum",
-                            "period": 300,
-                            "title": "AutoScaling Groups In-Service Capacity",
-                            "yAxis": {
-                                "left": {
-                                    "showUnits": false,
-                                    "label": "vCPUs"
-                                },
-                                "right": {
-                                    "showUnits": false
-                                }
-                            },
-                            "liveData": false
-                        }
-                    }
-                ]
-            }
-          - {
-              DeployedRegion: !Ref "AWS::Region",
-            }
+      DashboardName: !Join
+        - "-"
+        - - !Ref AWS::Region
+          - Batch-EC2-Capacity
+      DashboardBody: !Sub
+        - |-
+          {
+              "widgets": [
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 15,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWS/ECS,ClusterName} MetricName=\"CPUUtilization\"', 'Average', 60)", "label": "", "id": "e2" } ]
+                          ],
+                          "view": "timeSeries",
+                          "stacked": false,
+                          "region": "${DeployedRegion}",
+                          "period": 300,
+                          "yAxis": {
+                              "left": {
+                                  "label": "",
+                                  "showUnits": false,
+                                  "max": 100,
+                                  "min": 0
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "title": "CPU Utilization per ASG",
+                          "liveData": true,
+                          "stat": "Average"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 15,
+                      "x": 6,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWS/ECS,ClusterName} MetricName=\"CPUReservation\"', 'Average', 60)", "label": "", "id": "e2" } ]
+                          ],
+                          "view": "timeSeries",
+                          "stacked": false,
+                          "region": "${DeployedRegion}",
+                          "period": 300,
+                          "yAxis": {
+                              "left": {
+                                  "label": "",
+                                  "showUnits": false,
+                                  "max": 100,
+                                  "min": 0
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "title": "CPU Reservation per ECS Cluster",
+                          "liveData": true,
+                          "stat": "Average"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 15,
+                      "x": 12,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWS/ECS,ClusterName} MetricName=\"MemoryUtilization\"', 'Average', 60)", "label": "", "id": "e2" } ]
+                          ],
+                          "view": "timeSeries",
+                          "stacked": false,
+                          "region": "${DeployedRegion}",
+                          "period": 300,
+                          "yAxis": {
+                              "left": {
+                                  "label": "",
+                                  "showUnits": false,
+                                  "max": 100,
+                                  "min": 0
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "title": "MemoryUtilization per ECS Cluster",
+                          "liveData": true,
+                          "stat": "Average"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 6,
+                      "y": 15,
+                      "x": 18,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWS/ECS,ClusterName} MetricName=\"MemoryReservation\"', 'Average', 60)", "label": "", "id": "e2" } ]
+                          ],
+                          "view": "timeSeries",
+                          "stacked": false,
+                          "region": "${DeployedRegion}",
+                          "period": 300,
+                          "yAxis": {
+                              "left": {
+                                  "label": "",
+                                  "showUnits": false,
+                                  "max": 100,
+                                  "min": 0
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "title": "Memory Reservation per ECS Cluster",
+                          "liveData": true,
+                          "stat": "Average"
+                      }
+                  },
+                  {
+                      "height": 6,
+                      "width": 24,
+                      "y": 0,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWS/AutoScaling,AutoScalingGroupName} MetricName=\"GroupInServiceInstances\"', 'Sum', 60)", "label": "", "id": "e1", "stat": "Sum" } ]
+                          ],
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "stat": "Sum",
+                          "period": 300,
+                          "title": "AutoScaling Groups Total In-Service Instances",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "Instances"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": false
+                      }
+                  },
+                  {
+                      "height": 9,
+                      "width": 12,
+                      "y": 6,
+                      "x": 12,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWS/AutoScaling,AutoScalingGroupName} MetricName=\"GroupDesiredCapacity\"', 'Sum', 60)", "label": "", "id": "e1", "stat": "Sum" } ]
+                          ],
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "stat": "Sum",
+                          "period": 300,
+                          "title": "AutoScaling Groups Desired Capacity",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "vCPUs"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": false
+                      }
+                  },
+                  {
+                      "height": 9,
+                      "width": 12,
+                      "y": 6,
+                      "x": 0,
+                      "type": "metric",
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWS/AutoScaling,AutoScalingGroupName} MetricName=\"GroupInServiceCapacity\"', 'Sum', 60)", "label": "", "id": "e1", "stat": "Sum" } ]
+                          ],
+                          "view": "timeSeries",
+                          "stacked": true,
+                          "region": "${DeployedRegion}",
+                          "stat": "Sum",
+                          "period": 300,
+                          "title": "AutoScaling Groups In-Service Capacity",
+                          "yAxis": {
+                              "left": {
+                                  "showUnits": false,
+                                  "label": "vCPUs"
+                              },
+                              "right": {
+                                  "showUnits": false
+                              }
+                          },
+                          "liveData": false
+                      }
+                  }
+              ]
+          }
+        - DeployedRegion: !Ref AWS::Region
 
   AutoScalingGroupUtilization:
     Type: AWS::CloudWatch::Dashboard
     Properties:
-      DashboardName: !Join [ '-', [ !Ref AWS::Region, Batch-ASG-Utilization ] ]
-      DashboardBody:
-        !Sub
-          - |-
-            {
-                "widgets": [
-                    {
-                        "type": "metric",
-                        "x": 0,
-                        "y": 0,
-                        "width": 24,
-                        "height": 6,
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWS/EC2,AutoScalingGroupName} MetricName=\"CPUUtilization\"', 'Average', 60)", "label": "", "id": "e2" } ]
-                            ],
-                            "view": "timeSeries",
-                            "stacked": false,
-                            "region": "${DeployedRegion}",
-                            "period": 300,
-                            "yAxis": {
-                                "left": {
-                                    "label": "",
-                                    "showUnits": false,
-                                    "max": 100
-                                }
-                            },
-                            "title": "CPU Utilization per ECS Cluster",
-                            "liveData": true,
-                            "start": "-PT72H",
-                            "end": "P0D",
-                            "stat": "Average"
-                        }
-                    },
-                    {
-                        "type": "metric",
-                        "x": 0,
-                        "y": 6,
-                        "width": 12,
-                        "height": 6,
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWS/EC2,AutoScalingGroupName} MetricName=\"NetworkIn\"', 'Average', 60)", "label": "", "id": "e2" } ]
-                            ],
-                            "view": "timeSeries",
-                            "stacked": false,
-                            "region": "${DeployedRegion}",
-                            "period": 300,
-                            "yAxis": {
-                                "left": {
-                                    "label": "",
-                                    "showUnits": false
-                                }
-                            },
-                            "title": "Network Traffic In per ASG",
-                            "liveData": true,
-                            "stat": "Average"
-                        }
-                    },
-                    {
-                        "type": "metric",
-                        "x": 12,
-                        "y": 6,
-                        "width": 12,
-                        "height": 6,
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWS/EC2,AutoScalingGroupName} MetricName=\"NetworkOut\"', 'Average', 60)", "label": "", "id": "e2" } ]
-                            ],
-                            "view": "timeSeries",
-                            "stacked": false,
-                            "region": "${DeployedRegion}",
-                            "period": 300,
-                            "yAxis": {
-                                "left": {
-                                    "label": "",
-                                    "showUnits": false
-                                }
-                            },
-                            "title": "Network Traffic Out per ASG",
-                            "liveData": true,
-                            "stat": "Average"
-                        }
-                    },
-                    {
-                        "type": "metric",
-                        "x": 0,
-                        "y": 12,
-                        "width": 12,
-                        "height": 6,
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWS/EC2,AutoScalingGroupName} MetricName=\"DiskReadBytes\"', 'Average', 60)", "label": "", "id": "e2" } ]
-                            ],
-                            "view": "timeSeries",
-                            "stacked": false,
-                            "region": "${DeployedRegion}",
-                            "period": 300,
-                            "yAxis": {
-                                "left": {
-                                    "label": "",
-                                    "showUnits": false
-                                }
-                            },
-                            "title": "Disk Read Bytes per ASG",
-                            "liveData": true,
-                            "stat": "Average"
-                        }
-                    },
-                    {
-                        "type": "metric",
-                        "x": 12,
-                        "y": 12,
-                        "width": 12,
-                        "height": 6,
-                        "properties": {
-                            "metrics": [
-                                [ { "expression": "SEARCH('{AWS/EC2,AutoScalingGroupName} MetricName=\"DiskWriteBytes\"', 'Average', 60)", "label": "", "id": "e2" } ]
-                            ],
-                            "view": "timeSeries",
-                            "stacked": false,
-                            "region": "${DeployedRegion}",
-                            "period": 300,
-                            "yAxis": {
-                                "left": {
-                                    "label": "",
-                                    "showUnits": false
-                                }
-                            },
-                            "title": "Disk Write Bytes per ASG",
-                            "liveData": true,
-                            "stat": "Average"
-                        }
-                    }
-                ]
-            }
-          - {
-              DeployedRegion: !Ref "AWS::Region",
-            }
-
+      DashboardName: !Join
+        - "-"
+        - - !Ref AWS::Region
+          - Batch-ASG-Utilization
+      DashboardBody: !Sub
+        - |-
+          {
+              "widgets": [
+                  {
+                      "type": "metric",
+                      "x": 0,
+                      "y": 0,
+                      "width": 24,
+                      "height": 6,
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWS/EC2,AutoScalingGroupName} MetricName=\"CPUUtilization\"', 'Average', 60)", "label": "", "id": "e2" } ]
+                          ],
+                          "view": "timeSeries",
+                          "stacked": false,
+                          "region": "${DeployedRegion}",
+                          "period": 300,
+                          "yAxis": {
+                              "left": {
+                                  "label": "",
+                                  "showUnits": false,
+                                  "max": 100
+                              }
+                          },
+                          "title": "CPU Utilization per ECS Cluster",
+                          "liveData": true,
+                          "start": "-PT72H",
+                          "end": "P0D",
+                          "stat": "Average"
+                      }
+                  },
+                  {
+                      "type": "metric",
+                      "x": 0,
+                      "y": 6,
+                      "width": 12,
+                      "height": 6,
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWS/EC2,AutoScalingGroupName} MetricName=\"NetworkIn\"', 'Average', 60)", "label": "", "id": "e2" } ]
+                          ],
+                          "view": "timeSeries",
+                          "stacked": false,
+                          "region": "${DeployedRegion}",
+                          "period": 300,
+                          "yAxis": {
+                              "left": {
+                                  "label": "",
+                                  "showUnits": false
+                              }
+                          },
+                          "title": "Network Traffic In per ASG",
+                          "liveData": true,
+                          "stat": "Average"
+                      }
+                  },
+                  {
+                      "type": "metric",
+                      "x": 12,
+                      "y": 6,
+                      "width": 12,
+                      "height": 6,
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWS/EC2,AutoScalingGroupName} MetricName=\"NetworkOut\"', 'Average', 60)", "label": "", "id": "e2" } ]
+                          ],
+                          "view": "timeSeries",
+                          "stacked": false,
+                          "region": "${DeployedRegion}",
+                          "period": 300,
+                          "yAxis": {
+                              "left": {
+                                  "label": "",
+                                  "showUnits": false
+                              }
+                          },
+                          "title": "Network Traffic Out per ASG",
+                          "liveData": true,
+                          "stat": "Average"
+                      }
+                  },
+                  {
+                      "type": "metric",
+                      "x": 0,
+                      "y": 12,
+                      "width": 12,
+                      "height": 6,
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWS/EC2,AutoScalingGroupName} MetricName=\"DiskReadBytes\"', 'Average', 60)", "label": "", "id": "e2" } ]
+                          ],
+                          "view": "timeSeries",
+                          "stacked": false,
+                          "region": "${DeployedRegion}",
+                          "period": 300,
+                          "yAxis": {
+                              "left": {
+                                  "label": "",
+                                  "showUnits": false
+                              }
+                          },
+                          "title": "Disk Read Bytes per ASG",
+                          "liveData": true,
+                          "stat": "Average"
+                      }
+                  },
+                  {
+                      "type": "metric",
+                      "x": 12,
+                      "y": 12,
+                      "width": 12,
+                      "height": 6,
+                      "properties": {
+                          "metrics": [
+                              [ { "expression": "SEARCH('{AWS/EC2,AutoScalingGroupName} MetricName=\"DiskWriteBytes\"', 'Average', 60)", "label": "", "id": "e2" } ]
+                          ],
+                          "view": "timeSeries",
+                          "stacked": false,
+                          "region": "${DeployedRegion}",
+                          "period": 300,
+                          "yAxis": {
+                              "left": {
+                                  "label": "",
+                                  "showUnits": false
+                              }
+                          },
+                          "title": "Disk Write Bytes per ASG",
+                          "liveData": true,
+                          "stat": "Average"
+                      }
+                  }
+              ]
+          }
+        - DeployedRegion: !Ref AWS::Region
   # ------------------------------------------------------
 
-
 Outputs:
-
   BatchMetricsECSInstancesRegistrationDashboard:
     Description: CloudWatch Dashboard for ECS Instance (de)Registration Calls
-    Value:
-      !Sub
-        - |-
-            https://${Region}.console.aws.amazon.com/cloudwatch/home?region=${Region}#dashboards:name=${Dashboard}
-        - {
-            Region: !Ref "AWS::Region",
-            Dashboard: !Ref BatchMetricsECSInstancesRegistration
-          }
+    Value: !Sub
+      - https://${Region}.console.aws.amazon.com/cloudwatch/home?region=${Region}#dashboards:name=${Dashboard}
+      - Region: !Ref AWS::Region
+        Dashboard: !Ref BatchMetricsECSInstancesRegistration
 
   BatchMetricsJobsPlacementDashboard:
     Description: CloudWatch Dashboard for Job placement
-    Value:
-      !Sub
-        - |-
-            https://${Region}.console.aws.amazon.com/cloudwatch/home?region=${Region}#dashboards:name=${Dashboard}
-        - {
-            Region: !Ref "AWS::Region",
-            Dashboard: !Ref BatchMetricsJobsPlacement
-          }
+    Value: !Sub
+      - https://${Region}.console.aws.amazon.com/cloudwatch/home?region=${Region}#dashboards:name=${Dashboard}
+      - Region: !Ref AWS::Region
+        Dashboard: !Ref BatchMetricsJobsPlacement
 
   BatchMetricsJobsStatesDashboard:
     Description: CloudWatch Dashboard for Job States
-    Value:
-      !Sub
-        - |-
-            https://${Region}.console.aws.amazon.com/cloudwatch/home?region=${Region}#dashboards:name=${Dashboard}
-        - {
-            Region: !Ref "AWS::Region",
-            Dashboard: !Ref BatchMetricsJobsStates
-          }
+    Value: !Sub
+      - https://${Region}.console.aws.amazon.com/cloudwatch/home?region=${Region}#dashboards:name=${Dashboard}
+      - Region: !Ref AWS::Region
+        Dashboard: !Ref BatchMetricsJobsStates
   ECSClusterUtilizationDashboard:
     Description: ECS Cluster Utilization and Reservation
-    Value:
-      !Sub
-        - |-
-            https://${Region}.console.aws.amazon.com/cloudwatch/home?region=${Region}#dashboards:name=${Dashboard}
-        - {
-            Region: !Ref "AWS::Region",
-            Dashboard: !Ref ECSClusterUtilization
-          }
+    Value: !Sub
+      - https://${Region}.console.aws.amazon.com/cloudwatch/home?region=${Region}#dashboards:name=${Dashboard}
+      - Region: !Ref AWS::Region
+        Dashboard: !Ref ECSClusterUtilization
   AutoScalingGroupUtilizationDashboard:
     Description: CloudWatch Dashboard for AutoScaling Group CPU Utilization
-    Value:
-      !Sub
-        - |-
-            https://${Region}.console.aws.amazon.com/cloudwatch/home?region=${Region}#dashboards:name=${Dashboard}
-        - {
-            Region: !Ref "AWS::Region",
-            Dashboard: !Ref AutoScalingGroupUtilization
-          }
+    Value: !Sub
+      - https://${Region}.console.aws.amazon.com/cloudwatch/home?region=${Region}#dashboards:name=${Dashboard}
+      - Region: !Ref AWS::Region
+        Dashboard: !Ref AutoScalingGroupUtilization
